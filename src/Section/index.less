@@ -1,0 +1,117 @@
+@border: 1px solid #f7f7f7;
+
+.section {
+  position: relative;
+  width: 100%;
+  color: #333;
+
+  &-header {
+    box-sizing: content-box;
+    height: 28px;
+    padding: 0 10px;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 28px;
+    background-color: #fff;
+    border-bottom: @border;
+
+    &::before {
+      position: absolute;
+      top: 6.5px;
+      left: 0;
+      display: block;
+      width: 2px;
+      height: 15px;
+      background-color: #0747a6;
+      content: '';
+    }
+  }
+
+  &-body {
+    padding: 10px;
+    background-color: #fff;
+    border-bottom: @border;
+
+    .filter {
+      padding: 0;
+    }
+  }
+
+  &:last-child &-body {
+    border-bottom: none;
+  }
+
+  &-footer {
+    padding: 10px 0;
+    background-color: #fff;
+    border-bottom: @border;
+  }
+}
+
+.table-section {
+  display: flex;
+  flex: 1 1;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
+  .section-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 10px;
+    overflow: hidden;
+    border-bottom: none;
+  }
+
+  .section-footer {
+    background-color: transparent;
+    border-bottom: none;
+  }
+
+  .ant-pagination {
+    text-align: right;
+  }
+
+  .ant-pagination > li {
+    min-width: 24px;
+    height: 24px;
+    line-height: 22px;
+    border-radius: 2px;
+  }
+
+  .ant-pagination > .ant-pagination-options .ant-select-selector {
+    height: 24px;
+    border-radius: 2px;
+
+    .ant-select-selection-item {
+      line-height: 22px;
+    }
+  }
+
+  .ant-pagination .ant-pagination-options-quick-jumper {
+    height: 24px;
+    line-height: 24px;
+  }
+
+  .ant-pagination .ant-pagination-options-quick-jumper input {
+    height: 24px;
+    border-radius: 2px;
+  }
+
+  .ant-pagination-item:not(.ant-pagination-item-active) {
+    border-color: #fff;
+  }
+
+  .ant-pagination .ant-select-single .ant-select-selector {
+    border-color: #fff;
+  }
+
+  .ant-pagination-options-quick-jumper input:not(:focus) {
+    border-color: #fff;
+  }
+
+  .ant-pagination-item-link {
+    border-color: #fff;
+  }
+}
