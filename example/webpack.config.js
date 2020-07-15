@@ -14,7 +14,7 @@ module.exports = {
   mode: 'development',
   devtool: 'inline-source-map',
   devServer: {
-    contentBase: './dist',
+    contentBase: path.resolve(__dirname, './dist'),
   },
   plugins: [
     new CleanWebpackPlugin(),
@@ -37,7 +37,8 @@ module.exports = {
           {
             loader: 'ts-loader',
             options: {
-              configFile: path.resolve(__dirname, 'tsconfig.json'),
+              configFile: path.resolve(__dirname, '../tsconfig.json'),
+              onlyCompileBundledFiles: true,
             },
           },
         ],

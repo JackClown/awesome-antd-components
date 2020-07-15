@@ -14,7 +14,7 @@
     "noImplicitReturns": true,
     "suppressImplicitAnyIndexErrors": true,
     "noUnusedLocals": true,
-    "allowJs": false,
+    "allowJs": true,
     "skipLibCheck": true,
     "experimentalDecorators": false,
     "strict": true,

@@ -6,6 +6,7 @@ const merge = require('merge2');
 const through = require('through2');
 const path = require('path');
 const concat = require('gulp-concat');
+const spawn = require('cross-spawn');
 
 function compileTS() {
   const tsResult = src(['src/**/*.tsx', 'src/*.ts'])
@@ -43,8 +44,18 @@ function compileLess() {
     .pipe(dest('lib'));
 }
 
-watch(['src/**/*.(ts|tsx)', 'tsconfig.json'], compileTS);
+function watchFiles() {
+  watch(['src/**/*.(ts|tsx)', 'tsconfig.json'], compileTS);
 
-watch(['src/**/*.less'], series(moveLess, compileLess));
+  watch(['src/**/*.less'], processLess);
+}
 
-exports.default = parallel(compileTS, series(moveLess, compileLess));
+function webpack() {
+  spawn('npm', ['run', 'dev:webpack'], { stdio: 'inherit' });
+}
+
+const processLess = series(moveLess, compileLess);
+
+exports.dev = series(parallel(compileTS, processLess), parallel(watchFiles, webpack));
+
+exports.default = parallel(compileTS, processLess);
