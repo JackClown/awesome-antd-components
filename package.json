@@ -1,10 +1,10 @@
 {
   "name": "awesome-antd-components",
   "version": "0.0.1",
-  "main": "index.js",
+  "main": "lib/index.js",
   "author": "Shengjie Lu",
   "license": "MIT",
-  "private": true,
+  "files": [ "lib" ],
   "husky": {
     "hooks": {
       "pre-commit": "npm run lint-staged"
