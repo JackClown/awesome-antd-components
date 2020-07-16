@@ -20,5 +20,5 @@
     "strict": true,
     "declaration": true
   },
-  "exclude": ["node_modules", "lib", "example"]
+  "exclude": ["node_modules", "lib"]
 }

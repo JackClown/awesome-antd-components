@@ -14,6 +14,8 @@ module.exports = {
   mode: 'development',
   devtool: 'inline-source-map',
   devServer: {
+    host: '0.0.0.0',
+    historyApiFallback: true,
     contentBase: './dist',
   },
   plugins: [
@@ -72,7 +74,10 @@ module.exports = {
                   'dropdown-vertical-padding': '0',
                   'dropdown-line-height': '24px',
                   'select-dropdown-height': '24px',
+                  'input-border-color': '#e6e6e6',
+                  'select-border-color': '#e6e6e6',
                   'select-item-selected-bg': '#e6e6e6',
+                  'picker-border-color': '#e6e6e6',
                 },
                 noIeCompat: true,
                 javascriptEnabled: true,
