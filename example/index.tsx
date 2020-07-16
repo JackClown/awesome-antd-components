@@ -14,10 +14,6 @@ import '../lib/index.less';
 
 moment.locale('zh-cn');
 
-function App() {
-  return <div />;
-}
-
 ReactDOM.render(
   <ConfigProvider locale={zhCN}>
     <Router>
@@ -43,7 +39,6 @@ ReactDOM.render(
         </Layout.Content>
       </Layout>
     </Router>
-    <App />
   </ConfigProvider>,
   document.getElementById('root'),
 );
