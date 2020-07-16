@@ -320,6 +320,13 @@ export function App() {
     <ITable
       fetch={fetch}
       rowKey="id"
+      actions={[
+        {
+          text: '测试',
+          action: () => {},
+          useSelected: true,
+        },
+      ]}
       columns={[
         {
           title: '序号',

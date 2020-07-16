@@ -5,7 +5,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
   entry: {
-    app: path.resolve(__dirname, 'index.tsx'),
+    app: './example/index.tsx',
   },
   output: {
     filename: '[name].bundle.js',
@@ -14,13 +14,13 @@ module.exports = {
   mode: 'development',
   devtool: 'inline-source-map',
   devServer: {
-    contentBase: path.resolve(__dirname, './dist'),
+    contentBase: './dist',
   },
   plugins: [
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
       title: 'test',
-      template: path.resolve(__dirname, 'index.html'),
+      template: './example/index.html',
     }),
     new webpack.NamedModulesPlugin(),
     new webpack.HotModuleReplacementPlugin(),
@@ -37,7 +37,7 @@ module.exports = {
           {
             loader: 'ts-loader',
             options: {
-              configFile: path.resolve(__dirname, '../tsconfig.json'),
+              configFile: 'tsconfig.json',
               onlyCompileBundledFiles: true,
             },
           },
@@ -72,7 +72,7 @@ module.exports = {
                   'dropdown-vertical-padding': '0',
                   'dropdown-line-height': '24px',
                   'select-dropdown-height': '24px',
-                  'border-color-base': '#e6e6e6',
+                  'select-item-selected-bg': '#e6e6e6',
                 },
                 noIeCompat: true,
                 javascriptEnabled: true,

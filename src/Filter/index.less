@@ -1,33 +1,30 @@
-@import 'antd/lib/style/themes/default.less';
-
-@height: 28px;
-@arrowHeight: 16px;
+@import '../theme.less';
 
 .filter {
   padding: 10px;
 
   .ant-select {
     .ant-select-arrow {
-      top: (@height - @arrowHeight) / 2;
-      width: @arrowHeight;
-      height: @arrowHeight;
+      top: (@height-base - @select-down-size) / 2;
+      width: @select-down-size;
+      height: @select-down-size;
       margin-top: 0;
       pointer-events: none;
 
       svg {
-        font-size: @arrowHeight;
+        font-size: @select-down-size;
       }
     }
 
     .ant-select-selector {
-      border-color: @border-color-base;
+      border-color: @filter-border-color;
 
       .ant-select-selection-search-input {
         height: 100%;
       }
 
       .ant-select-selection-item {
-        line-height: @height - 2;
+        line-height: @height-base - 2;
       }
     }
   }
@@ -35,16 +32,16 @@
   .filter-field {
     flex-shrink: 0;
     width: 140px;
-    height: @height;
+    height: @height-base;
     padding: 0 10px;
-    line-height: @height;
-    background-color: @border-color-base;
+    line-height: @height-base;
+    background-color: @filter-border-color;
 
     &.ant-select .ant-select-selector {
       height: 100%;
       padding: 0;
       background-color: rgba(0, 0, 0, 0);
-      border-color: @border-color-base;
+      border-color: @filter-border-color;
       outline: none;
       box-shadow: none;
     }
@@ -53,13 +50,13 @@
   .filter-operator.ant-select.ant-select-single {
     flex-shrink: 0;
     width: 100px;
-    height: @height;
+    height: @height-base;
 
     .ant-select-selector {
       height: 100%;
       padding: 0;
       background-color: rgba(0, 0, 0, 0);
-      border-color: @border-color-base;
+      border-color: @filter-border-color;
       border-right: none;
       border-radius: 0;
       outline: none;
@@ -73,7 +70,7 @@
 
   .filter-value {
     flex: 1;
-    height: @height;
+    height: @height-base;
     overflow: hidden;
 
     .ant-picker,
@@ -93,8 +90,8 @@
       overflow: hidden;
 
       .ant-select-selection-item {
-        height: 20px;
-        line-height: 18px;
+        height: @height-base - 8px;
+        line-height: @height-base - 10px;
 
         .anticon.anticon-close {
           vertical-align: -0.125em;
@@ -115,7 +112,7 @@
     display: flex;
     align-items: flex-start;
     width: 500px;
-    height: @height;
+    height: @height-base;
     margin-bottom: 5px;
 
     &:last-child {
@@ -125,7 +122,7 @@
 
   .ant-btn {
     min-width: 70px;
-    height: @height;
+    height: @height-base;
     margin-left: 10px;
     padding: 0 8px;
   }
@@ -149,15 +146,15 @@
     .ant-tag {
       display: flex;
       align-items: center;
-      height: 28px;
-      color: #063985;
-      background-color: #cddaed;
+      height: @height-base;
+      color: @filter-tag-color;
+      background-color: @filter-tag-bg;
       border: none;
       border-radius: 5px;
     }
 
     .ant-tag .anticon-close {
-      color: #063985;
+      color: @filter-tag-color;
     }
   }
 }

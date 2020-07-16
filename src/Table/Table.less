@@ -1,7 +1,8 @@
+@import '../theme.less';
+
 .table {
   flex: 1 1;
   height: 100%;
-  background-color: #fff;
 
   & > .ant-spin-nested-loading {
     height: 100%;
@@ -42,20 +43,20 @@
 
   .ant-table-tbody > tr > td,
   .ant-table tfoot > tr > td {
-    height: 29px;
+    height: @table-row-height + 1;
     padding: 0 10px;
     color: #333;
-    border-color: #f4f4f4;
+    border-color: @table-border-color;
   }
 
   .ant-table-thead > tr > th {
-    height: 28px;
+    height: @table-row-height;
     padding: 0 10px;
     color: #333;
     font-weight: bold;
     font-size: 14px;
     text-align: left;
-    background: #f4f4f4;
+    background: @table-header-bg;
     border: none;
     user-select: none;
 
@@ -65,13 +66,9 @@
   }
 
   tr.ant-table-row {
-    &:hover {
-      background: rgba(60, 90, 100, 0.04);
-    }
-
     &.ant-table-row-selected > td {
-      background: #deebff;
-      border-bottom: 1px solid #deebff;
+      background: @table-selected-row-bg;
+      border-color: @table-selected-row-bg;
     }
   }
 

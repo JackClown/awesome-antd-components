@@ -1,5 +1,14 @@
 # Awesome Antd Components
 
+## Use
+
 ```javascript
-npm start
+import { ITable } from 'awesome-antd-components';
+import 'awesome-antd-components/lib/index.css';
+```
+
+## Develop
+
+```bash
+npm run dev
 ```

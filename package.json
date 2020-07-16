@@ -14,7 +14,7 @@
   },
   "scripts": {
     "dev": "gulp dev",
-    "dev:webpack": "webpack-dev-server --config ./example/webpack.config.js",
+    "dev:webpack": "webpack-dev-server --config ./webpack.config.js",
     "lint-staged": "lint-staged",
     "lint-staged:js": "eslint --ext .js,.jsx,.ts,.tsx ",
     "lint": "eslint"

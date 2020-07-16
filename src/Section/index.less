@@ -1,4 +1,4 @@
-@border: 1px solid #f7f7f7;
+@import '../theme.less';
 
 .section {
   position: relative;
@@ -7,22 +7,22 @@
 
   &-header {
     box-sizing: content-box;
-    height: 28px;
+    height: @height-base;
     padding: 0 10px;
     font-weight: bold;
     font-size: 14px;
-    line-height: 28px;
+    line-height: @height-base;
     background-color: #fff;
-    border-bottom: @border;
+    border-bottom: @section-border;
 
     &::before {
       position: absolute;
-      top: 6.5px;
+      top: (@height-base - 15) / 2;
       left: 0;
       display: block;
       width: 2px;
       height: 15px;
-      background-color: #0747a6;
+      background-color: @section-color;
       content: '';
     }
   }
@@ -30,7 +30,7 @@
   &-body {
     padding: 10px;
     background-color: #fff;
-    border-bottom: @border;
+    border-bottom: @section-border;
 
     .filter {
       padding: 0;
@@ -44,7 +44,7 @@
   &-footer {
     padding: 10px 0;
     background-color: #fff;
-    border-bottom: @border;
+    border-bottom: @section-border;
   }
 }
 

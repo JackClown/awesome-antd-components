@@ -35,9 +35,6 @@ function compileLess() {
     .pipe(dest('lib'))
     .pipe(
       less({
-        modifyVars: {
-          'border-color-base': '#e6e6e6',
-        },
         javascriptEnabled: true,
       }),
     )
