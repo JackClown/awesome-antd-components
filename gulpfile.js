@@ -46,7 +46,14 @@ function compileTS() {
 }
 
 function moveLess() {
-  return src('src/**/*.less').pipe(dest('lib'));
+  return src('src/**/*.less')
+    .pipe(dest('lib'))
+    .pipe(
+      less({
+        javascriptEnabled: true,
+      }),
+    )
+    .pipe(dest('lib'));
 }
 
 function compileLess() {
