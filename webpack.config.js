@@ -42,7 +42,16 @@ module.exports = {
             loader: 'babel-loader',
             options: {
               presets: ['@babel/preset-env'],
-              plugins: [['babel-plugin-import', { libraryName: 'antd', style: true }]],
+              plugins: [
+                [
+                  'babel-plugin-import',
+                  {
+                    libraryName: 'antd',
+                    libraryDirectory: 'lib',
+                    style: true,
+                  },
+                ],
+              ],
             },
           },
         ],
@@ -55,7 +64,16 @@ module.exports = {
             loader: 'babel-loader',
             options: {
               presets: ['@babel/preset-env'],
-              plugins: [['babel-plugin-import', { libraryName: 'antd', style: true }]],
+              plugins: [
+                [
+                  'babel-plugin-import',
+                  {
+                    libraryName: 'antd',
+                    libraryDirectory: 'lib',
+                    style: true,
+                  },
+                ],
+              ],
             },
           },
           {

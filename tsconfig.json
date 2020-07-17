@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "outDir": "./lib",
-    "module": "commonjs",
+    "module": "es6",
     "target": "es6",
-    "lib": ["esnext", "dom"],
+    "lib": ["es2020", "dom"],
     "sourceMap": true,
     "baseUrl": ".",
     "jsx": "react",
