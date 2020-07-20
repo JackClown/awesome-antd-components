@@ -9,12 +9,10 @@ import React, {
   useImperativeHandle,
   RefObject,
   ReactText,
-  memo,
 } from 'react';
 import { Form } from 'antd';
 import { FormInstance, FormItemProps } from 'antd/lib/form';
 import { debounce } from 'lodash';
-import classNames from 'classnames';
 
 import Table, { Props as TableProps, ColumnType as TableColumnType } from '../Table/Table';
 import './index.less';
@@ -38,11 +36,14 @@ interface State {
   col: string | number;
 }
 
-interface Observer {
-  update: (state: State) => void;
+interface RowForm {
   getFieldsValue: FormInstance['getFieldsValue'];
   validateFields: FormInstance['validateFields'];
 }
+
+const formatKey = (row: ReactText, col: ReactText) => {
+  return `${row}|${col}`;
+};
 
 export class Store<T> {
   private data: Map<ReactText, T>;
@@ -51,7 +52,9 @@ export class Store<T> {
 
   private state: State;
 
-  private observers = new Map<ReactText, Observer>();
+  private observers: Map<ReactText, (state: State) => void> = new Map();
+
+  private forms: Map<ReactText, RowForm> = new Map();
 
   private listeners: Set<(data: T[]) => void> = new Set();
 
@@ -61,12 +64,20 @@ export class Store<T> {
     this.data = new Map(data.map(item => [item[rowKey] as ReactText, item]));
   }
 
-  public subscribe(key: string, observer: Observer) {
-    this.observers.set(key, observer);
+  public observe(key: ReactText, cb: (state: State) => void) {
+    this.observers.set(key, cb);
   }
 
-  public unsubscribe(key: string) {
+  public unobserve(key: ReactText) {
     this.observers.delete(key);
+  }
+
+  public register(key: ReactText, form: RowForm) {
+    this.forms.set(key, form);
+  }
+
+  public unregister(key: ReactText) {
+    this.forms.delete(key);
   }
 
   public getState() {
@@ -127,14 +138,14 @@ export class Store<T> {
     let rowKey;
 
     try {
-      for (const [key, observer] of this.observers) {
+      for (const [key, form] of this.forms) {
         rowKey = key;
 
         if (validate) {
-          await observer.validateFields();
+          await form.validateFields();
         }
 
-        data.push(observer.getFieldsValue());
+        data.push(form.getFieldsValue());
       }
 
       return data;
@@ -146,26 +157,31 @@ export class Store<T> {
   }
 
   public async setState(state: Partial<State>) {
-    Object.assign(this.state, state);
+    const prev = this.state;
+    const next = { ...this.state, ...state };
 
-    for (const [, observer] of this.observers) {
-      observer.update(this.state);
+    let observer = this.observers.get(formatKey(prev.row, prev.col));
+
+    if (observer) {
+      observer(next);
     }
+
+    observer = this.observers.get(formatKey(next.row, next.col));
+
+    if (observer) {
+      observer(next);
+    }
+
+    this.state = next;
   }
 }
 
 const Context = createContext(new Store<any>({ row: '', col: '' }, [], ''));
 
 const RowContext = createContext<{
-  form?: FormInstance;
-  focused: boolean;
   rowKey: string;
-  record: object;
 }>({
-  form: undefined,
-  focused: false,
   rowKey: '',
-  record: {},
 });
 
 const Row: React.FC<{
@@ -173,19 +189,15 @@ const Row: React.FC<{
   className: string;
   onValuesChange: (changedValues: object, values: object) => object;
 }> = props => {
-  const { record, className, onValuesChange, ...restProps } = props;
+  const { record, onValuesChange, ...restProps } = props;
 
   const store = useContext(Context);
-  const [focused, setFocused] = useState(false);
   const [form] = Form.useForm();
 
   const rowKey = props['data-row-key'];
 
   useEffect(() => {
-    store.subscribe(rowKey, {
-      update: (state: State) => {
-        setFocused(state.row === rowKey);
-      },
+    store.register(rowKey, {
       getFieldsValue: () => {
         return {
           ...record,
@@ -196,7 +208,7 @@ const Row: React.FC<{
     });
 
     return () => {
-      store.unsubscribe(rowKey);
+      store.unregister(rowKey);
     };
   }, []);
 
@@ -210,6 +222,10 @@ const Row: React.FC<{
     }
   }, 300);
 
+  const ctx = useMemo(() => {
+    return { rowKey };
+  }, [form, rowKey, record]);
+
   return (
     <Form
       form={form}
@@ -218,53 +234,59 @@ const Row: React.FC<{
       name={rowKey}
       onValuesChange={handleChange}
     >
-      <RowContext.Provider
-        value={{
-          focused,
-          form,
-          rowKey,
-          record,
-        }}
-      >
-        <tr {...restProps} className={classNames(className, focused ? 'editing' : '')} />
+      <RowContext.Provider value={ctx}>
+        <tr {...restProps} />
       </RowContext.Provider>
     </Form>
   );
 };
 
-const Col = memo((props: { column?: ColumnType<object>; index: number }) => {
+const MaskInputItem = (props: {
+  value?: any;
+  render?: (value: any) => any;
+  onFocus?: () => void;
+}) => {
+  const { value, render, ...restProps } = props;
+
+  return (
+    <div className="ant-input ant-input-mask" tabIndex={0} {...restProps}>
+      {render ? render(value) : value}
+    </div>
+  );
+};
+
+const FormItemCol = React.memo((props: { column: ColumnType<object>; index: number }) => {
   const { column, index, ...restProps } = props;
 
-  const { focused, form, rowKey, record } = useContext(RowContext);
   const store = useContext(Context);
+  const { rowKey } = useContext(RowContext);
+  const [focused, setFocused] = useState(false);
 
-  if (form === undefined || column === undefined || column.formItem === undefined) {
-    return <td {...restProps} />;
-  }
+  const key = formatKey(rowKey, index);
 
-  const { col } = store.getState();
+  useEffect(() => {
+    store.observe(key, (state: State) => {
+      setFocused(state.row === rowKey && state.col === index);
+    });
+
+    return () => {
+      store.unobserve(key);
+    };
+  }, []);
 
   const handleClick = () => {
     store.setState({ col: index, row: rowKey });
   };
 
-  const { children, persist, ...formItemProps } = column.formItem;
+  const { children, persist, ...formItemProps } = column.formItem!;
   let formItem;
-  let cellItem;
 
   if (focused || persist) {
     formItem = cloneElement(children, {
-      autoFocus: col === index,
+      autoFocus: focused,
     });
   } else {
-    const data = { ...record, ...form.getFieldsValue() };
-    const value = column.dataIndex ? form.getFieldValue(column.dataIndex) : '';
-
-    cellItem = (
-      <div className="ant-input ant-input-mask" tabIndex={0} onFocus={handleClick}>
-        {column.render ? column.render(value, data, index) : value}
-      </div>
-    );
+    formItem = <MaskInputItem onFocus={handleClick} render={column.render as any} />;
   }
 
   return (
@@ -275,17 +297,30 @@ const Col = memo((props: { column?: ColumnType<object>; index: number }) => {
         label={column.title}
         noStyle={formItem === undefined}
       >
-        {formItem || cellItem}
+        {formItem}
       </Form.Item>
     </td>
   );
 });
+
+const Col = (props: any) => {
+  const { column } = props;
+
+  if (column === undefined || column.formItem === undefined) {
+    return <td {...props} />;
+  }
+
+  return <FormItemCol {...props} />;
+};
 
 export default function FormTable<T extends object>(props: Props<T>) {
   const { columns, rowKey, storeRef, onValuesChange, dataSource = [], ...restProps } = props;
 
   const mergedColumns = columns.map((column, index) => ({
     ...column,
+    shouldCellUpdate: (record: T, prevRecord: T) => {
+      return record !== prevRecord;
+    },
     onCell: () => {
       return {
         column,

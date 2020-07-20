@@ -1,9 +1,9 @@
-import React, { useRef, useState, ReactText } from 'react';
+import React, { useRef, useState, ReactText, useMemo } from 'react';
 import { Input, Button, Checkbox, DatePicker, Select } from 'antd';
 import moment, { Moment } from 'moment';
 
 import { Section, Layout, Actions, Popup, Form, FormTable } from '../lib';
-import { Store } from '../lib/FormTable';
+import { Store, ColumnType } from '../lib/FormTable';
 
 export default function Demo() {
   const [form] = Form.useForm();
@@ -28,19 +28,95 @@ export default function Demo() {
 
   const id = useRef(0);
 
-  const data = [...new Array(4)].map(() => {
-    id.current += 1;
+  const data = useMemo(
+    () =>
+      [...new Array(10)].map(() => {
+        id.current += 1;
 
-    return {
-      id: id.current,
-      out_app_type: '',
-      create_time: moment('2020-02-03 12:00:00', 'YYYY-MM-DD HH:mm:ss'),
-      type: '企业',
-      name: '测试',
-      enable: true,
-      description: '',
-    };
-  });
+        return {
+          id: id.current,
+          out_app_type: '',
+          create_time: moment('2020-02-03 12:00:00', 'YYYY-MM-DD HH:mm:ss'),
+          type: '企业',
+          name: '测试',
+          enable: true,
+          description: '',
+        };
+      }),
+    [],
+  );
+
+  const columns = useMemo(() => {
+    return [
+      {
+        title: '往来单位编号',
+        dataIndex: 'id',
+        width: 200,
+      },
+      {
+        title: '往来单位来源',
+        dataIndex: 'out_app_type',
+        formItem: {
+          rules: [
+            {
+              required: true,
+            },
+          ],
+          children: <Input autoComplete="off" />,
+        },
+      },
+      {
+        title: '日期',
+        dataIndex: 'create_time',
+        dataFormat: 'datetime',
+        formItem: {
+          children: <DatePicker showTime />,
+          rules: [
+            {
+              required: true,
+            },
+          ],
+        },
+        render: (value: Moment | null) => (value ? value.format('YYYY-MM-DD HH:mm:ss') : null),
+      },
+      {
+        title: '往来单位类型',
+        dataIndex: 'type',
+        formItem: {
+          children: (
+            <Select
+              options={[
+                {
+                  label: '企业',
+                  value: '企业',
+                },
+                {
+                  label: '单位',
+                  value: '单位',
+                },
+              ]}
+            />
+          ),
+        },
+      },
+      {
+        title: '启用状态',
+        dataIndex: 'enable',
+        formItem: {
+          valuePropName: 'checked',
+          persist: true,
+          children: <input type="checkbox" />,
+        },
+      },
+      {
+        title: '描述',
+        dataIndex: 'description',
+        formItem: {
+          children: <Input />,
+        },
+      },
+    ] as ColumnType<any>[];
+  }, []);
 
   const store = useRef<Store<any>>(null);
 
@@ -189,91 +265,7 @@ export default function Demo() {
             selectedRowKeys: selectedRows,
             onChange: selectedRows => setSelectedRows(selectedRows),
           }}
-          columns={[
-            {
-              title: '往来单位编号',
-              dataIndex: 'id',
-              width: 200,
-            },
-            {
-              title: '往来单位来源',
-              dataIndex: 'out_app_type',
-              formItem: {
-                rules: [
-                  {
-                    required: true,
-                  },
-                ],
-                children: <Input autoComplete="off" />,
-              },
-            },
-            {
-              title: '日期',
-              dataIndex: 'create_time',
-              dataFormat: 'datetime',
-              formItem: {
-                children: <DatePicker showTime />,
-                rules: [
-                  {
-                    required: true,
-                  },
-                ],
-              },
-              render: (value: Moment | null) =>
-                value ? value.format('YYYY-MM-DD HH:mm:ss') : null,
-            },
-            {
-              title: '往来单位类型',
-              dataIndex: 'type',
-              formItem: {
-                children: (
-                  <Select
-                    options={[
-                      {
-                        label: '企业',
-                        value: '企业',
-                      },
-                      {
-                        label: '单位',
-                        value: '单位',
-                      },
-                    ]}
-                  />
-                ),
-              },
-            },
-            {
-              title: '往来单位名称',
-              dataIndex: 'name',
-              formItem: {
-                children: (
-                  <Popup<number>
-                    title="Popup"
-                    formatLabel={val => val.toString()}
-                    component={props => (
-                      <Button onClick={() => props.onChange(1)}>hello world</Button>
-                    )}
-                  />
-                ),
-              },
-            },
-            {
-              title: '启用状态',
-              dataIndex: 'enable',
-              formItem: {
-                valuePropName: 'checked',
-                persist: true,
-                children: <input type="checkbox" />,
-              },
-            },
-            {
-              title: '描述',
-              dataIndex: 'description',
-              formItem: {
-                children: <Input />,
-              },
-            },
-          ]}
+          columns={columns}
         />
       </Section>
     </Layout>

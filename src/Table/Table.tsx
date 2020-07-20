@@ -131,6 +131,7 @@ function Table<T extends object = any>(props: Props<T>) {
       title: '',
       dataIndex: 'empty_col',
       width: 'auto',
+      shouldCellUpdate: () => false,
       render: () => '',
     });
 
