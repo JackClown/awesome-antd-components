@@ -25,7 +25,11 @@ export interface Props<T> extends Omit<TableProps<T>, 'columns' | 'pagination'> 
   summaryTitle?: string;
 }
 
-const Th = (props: { width?: number; index: number; tableRef: RefObject<HTMLDivElement> }) => {
+const Th = React.memo(function Th(props: {
+  width?: number;
+  index: number;
+  tableRef: RefObject<HTMLDivElement>;
+}) {
   const { index, width, tableRef, ...restProps } = props;
   const [size, setSize] = useState(width || 0);
 
@@ -69,7 +73,7 @@ const Th = (props: { width?: number; index: number; tableRef: RefObject<HTMLDivE
       <th {...restProps} />
     </Resizable>
   );
-};
+});
 
 function Table<T extends object = any>(props: Props<T>) {
   const {
@@ -138,6 +142,27 @@ function Table<T extends object = any>(props: Props<T>) {
     return cols;
   }, [columns, hasRowSelection]);
 
+  const [selectedKeys, setSelectedKeys] = useState<(string | number)[]>(
+    rowSelection?.selectedRowKeys || [],
+  );
+
+  let mergedRowSelection: TableProps<T>['rowSelection'];
+
+  if (rowSelection !== undefined) {
+    mergedRowSelection = {
+      columnWidth: '34px',
+      selectedRowKeys: selectedKeys,
+      ...rowSelection,
+      onChange: (...args) => {
+        if (rowSelection.onChange) {
+          rowSelection.onChange(...args);
+        }
+
+        setSelectedKeys(args[0]);
+      },
+    };
+  }
+
   useEffect(() => {
     const elm = tableWrapper.current;
 
@@ -176,7 +201,7 @@ function Table<T extends object = any>(props: Props<T>) {
         <AntdTable
           rowKey={rowKey}
           columns={cols}
-          rowSelection={rowSelection}
+          rowSelection={mergedRowSelection}
           {...restProps}
           pagination={false}
           components={{
@@ -194,14 +219,14 @@ function Table<T extends object = any>(props: Props<T>) {
           rowKey={rowKey}
           onRow={record => ({
             onClick: () => {
-              rowSelection?.onChange?.(
+              mergedRowSelection?.onChange?.(
                 [typeof rowKey === 'function' ? rowKey(record) : record[rowKey || 'key']],
                 [record],
               );
             },
           })}
           columns={cols}
-          rowSelection={rowSelection}
+          rowSelection={mergedRowSelection}
           {...restProps}
           showHeader={false}
           pagination={false}

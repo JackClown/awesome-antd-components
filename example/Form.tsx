@@ -1,4 +1,4 @@
-import React, { useRef, useState, ReactText, useMemo } from 'react';
+import React, { useRef, useMemo, ReactText } from 'react';
 import { Input, Button, Checkbox, DatePicker, Select } from 'antd';
 import moment, { Moment } from 'moment';
 
@@ -120,8 +120,6 @@ export default function Demo() {
 
   const store = useRef<Store<any>>(null);
 
-  const [selectedRows, setSelectedRows] = useState<ReactText[]>([]);
-
   const handleSave = async () => {
     if (!store.current) {
       return;
@@ -148,10 +146,12 @@ export default function Demo() {
     });
   };
 
+  const selectedRows = useRef<ReactText[]>([]);
+
   const handleDelete = () => {
     if (store.current) {
-      store.current.remove(...selectedRows);
-      setSelectedRows([]);
+      store.current.remove(...selectedRows.current);
+      selectedRows.current = [];
     }
   };
 
@@ -262,8 +262,10 @@ export default function Demo() {
             };
           }}
           rowSelection={{
-            selectedRowKeys: selectedRows,
-            onChange: selectedRows => setSelectedRows(selectedRows),
+            onChange: rows => {
+              selectedRows.current = rows;
+              console.log(selectedRows);
+            },
           }}
           columns={columns}
         />

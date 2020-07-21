@@ -241,19 +241,22 @@ const Row: React.FC<{
   );
 };
 
-const MaskInputItem = (props: {
-  value?: any;
-  render?: (value: any) => any;
-  onFocus?: () => void;
-}) => {
+const MaskInputItem = React.forwardRef<
+  HTMLDivElement,
+  {
+    value?: any;
+    render?: (value: any) => any;
+    onFocus?: () => void;
+  }
+>(function MaskInputItem(props, ref) {
   const { value, render, ...restProps } = props;
 
   return (
-    <div className="ant-input ant-input-mask" tabIndex={0} {...restProps}>
+    <div className="ant-input ant-input-mask" tabIndex={0} {...restProps} ref={ref}>
       {render ? render(value) : value}
     </div>
   );
-};
+});
 
 const FormItemCol = React.memo((props: { column: ColumnType<object>; index: number }) => {
   const { column, index, ...restProps } = props;

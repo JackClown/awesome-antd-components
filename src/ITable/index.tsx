@@ -1,7 +1,7 @@
 import React, { useState, useMemo, DependencyList, useImperativeHandle, Ref } from 'react';
 import { TableProps } from 'antd/lib/table';
 
-import { useAsyncEffect, useDeepCompareMemoize, useCompareMemoize } from '../hooks';
+import { useAsyncEffect, useDeepCompareMemoize } from '../hooks';
 import Filter, { TagValue, FormType, Option, Operators } from '../Filter';
 import Table, { ColumnType } from '../Table';
 import Layout from '../Layout';
@@ -18,7 +18,6 @@ export type IColumType<T> = Omit<ColumnType<T>, 'title'> &
 
 export interface ITableRef {
   fetch: (current?: number) => void;
-  unselectAll: () => void;
   setQueries: (queries: TagValue[]) => void;
   getQueries: () => TagValue[];
 }
@@ -70,7 +69,6 @@ export default function ITable<T extends object>(props: Props<T>) {
     current: 1,
     pageSize: (paginationProps && paginationProps.pageSize) || 50,
   });
-  const [selectedKeys, setSelectedKeys] = useState<(string | number)[]>([]);
 
   useImperativeHandle(
     actionRef,
@@ -86,9 +84,6 @@ export default function ITable<T extends object>(props: Props<T>) {
 
           return { ...prev };
         });
-      },
-      unselectAll: () => {
-        setSelectedKeys([]);
       },
       setQueries,
       getQueries: () => queries,
@@ -107,31 +102,26 @@ export default function ITable<T extends object>(props: Props<T>) {
     data: [],
   });
 
-  const selectedRows = useMemo(() => {
-    const rows: T[] = [];
+  const [selectedRows, setSelectedRows] = useState<T[]>([]);
 
-    state.data.forEach(item => {
-      if (selectedKeys.includes(item[props.rowKey])) {
-        rows.push(item);
-      }
-    });
+  let iRowSelection: TableProps<T>['rowSelection'];
 
-    return rows;
-  }, [selectedKeys, state.data]);
+  if (rowSelection !== undefined || actions?.find(item => item.useSelected) !== undefined) {
+    iRowSelection = {
+      onChange: selectedKeys => {
+        const rows: T[] = [];
 
-  const memoizedRowSelection = useCompareMemoize(rowSelection);
+        state.data.forEach(item => {
+          if (selectedKeys.includes(item[props.rowKey])) {
+            rows.push(item);
+          }
+        });
 
-  const iRowSelection = useMemo(() => {
-    return memoizedRowSelection !== undefined ||
-      (actions || []).filter(item => item.useSelected).length > 0
-      ? {
-          columnWidth: '34px',
-          onChange: setSelectedKeys,
-          selectedRowKeys: selectedKeys,
-          ...memoizedRowSelection,
-        }
-      : undefined;
-  }, [memoizedRowSelection, selectedKeys, actions !== undefined]);
+        setSelectedRows(rows);
+      },
+      ...rowSelection,
+    };
+  }
 
   const memoizedColumns = useDeepCompareMemoize(columns);
 
