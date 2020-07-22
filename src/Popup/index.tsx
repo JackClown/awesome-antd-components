@@ -85,13 +85,7 @@ export default function Popup<T>(props: PopupProps<T>) {
   let trigger: ReactNode;
 
   if (children) {
-    trigger = cloneElement(
-      children,
-      {
-        onClick: handleOpen,
-      },
-      label,
-    );
+    trigger = cloneElement(children, undefined, label);
   } else {
     trigger = (
       <Input
@@ -100,7 +94,6 @@ export default function Popup<T>(props: PopupProps<T>) {
         readOnly
         ref={inputRef}
         disabled={disabled}
-        onClick={handleOpen}
         autoFocus={autoFocus}
         suffix={
           <>
@@ -116,7 +109,9 @@ export default function Popup<T>(props: PopupProps<T>) {
 
   return (
     <>
-      {trigger}
+      <div className="popup-wrapper" onClick={handleOpen}>
+        {trigger}
+      </div>
       <Modal
         destroyOnClose
         visible={visible}

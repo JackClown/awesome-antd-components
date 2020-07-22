@@ -2,6 +2,7 @@ import React from 'react';
 
 import { ITable } from '../lib';
 import { Operators } from '../lib/Filter';
+import { Button } from 'antd';
 
 export default function Demo() {
   const fetch = () => {
@@ -49,6 +50,12 @@ export default function Demo() {
         {
           title: '名称',
           dataIndex: 'name',
+          operators: [Operators.EQUAL],
+          type: 'popup',
+          popup: {
+            formatLabel: value => value,
+            component: props => <Button onClick={() => props.onChange(1)}>hello world</Button>,
+          },
         },
         {
           title: '性别',

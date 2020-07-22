@@ -19,5 +19,5 @@ const DownSvg = () => (
 );
 
 export default function Down(props: any) {
-  return <Icon component={DownSvg} {...props} />;
+  return <Icon style={{ pointerEvents: 'none' }} component={DownSvg} {...props} />;
 }
