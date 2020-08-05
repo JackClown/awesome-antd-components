@@ -119,8 +119,6 @@ export default function Popup<T>(props: PopupProps<T>) {
         centered
         onCancel={handleCancel}
         onOk={handleOk}
-        okText="确认"
-        cancelText="取消"
         bodyStyle={{ height: '525px', padding: '10px' }}
         {...restProps}
       >

@@ -73,12 +73,13 @@ interface State {
   [field: string]: OptionValue | undefined;
 }
 
-interface Props<T> {
+export interface Props<T> {
   options: Option<T>[];
   value: TagValue<T>[];
   onChange?: (value: TagValue<T>[]) => void;
   onSubmit?: (value: TagValue<T>[]) => void;
   groupBy?: (item: Option<T>) => string;
+  extra?: ReactNode;
 }
 
 function Filter<T extends string = string>(props: Props<T>) {
@@ -94,6 +95,7 @@ function Filter<T extends string = string>(props: Props<T>) {
 
       return 'normal';
     },
+    extra,
   } = props;
 
   const memoizedOptions = useDeepCompareMemoize(options);
@@ -156,19 +158,31 @@ function Filter<T extends string = string>(props: Props<T>) {
   const [tags, setTags] = useState(value || []);
 
   useEffect(() => {
-    setTags(value || []);
-  }, [value]);
+    setTags(value);
 
-  useEffect(() => {
-    if (onChange) {
-      onChange(tags);
+    if (value !== tags) {
+      const nextState: State = {};
+
+      value.forEach(item => {
+        nextState[item.field] = [item.operator, item.value];
+      });
+
+      setState(nextState);
     }
-  }, [tags]);
+  }, [value]);
 
   useEffect(() => {
     setGroupsState(defaultGroupsState);
     setState(defaultState);
   }, [memoizedOptions]);
+
+  const changeTags = (tags: TagValue<T>[]) => {
+    setTags(tags);
+
+    if (onChange) {
+      onChange(tags);
+    }
+  };
 
   const handleChangeField = (groupKey: string, field: T) => {
     setGroupsState(prev => ({
@@ -228,7 +242,7 @@ function Filter<T extends string = string>(props: Props<T>) {
 
       nextTags.splice(index, 1);
 
-      setTags(nextTags);
+      changeTags(nextTags);
 
       index = value.findIndex(item => item.field === tag.field);
 
@@ -308,13 +322,13 @@ function Filter<T extends string = string>(props: Props<T>) {
   const handleAdd = () => {
     const nextTags = getNextTags();
 
-    setTags(nextTags);
+    changeTags(nextTags);
   };
 
   const handleSubmit = () => {
     const nextTags = getNextTags();
 
-    setTags(nextTags);
+    changeTags(nextTags);
 
     if (onSubmit) {
       onSubmit(nextTags);
@@ -489,7 +503,7 @@ function Filter<T extends string = string>(props: Props<T>) {
                       suffixIcon={<Down />}
                     />
                   ) : (
-                    <div className="filter-field">{options[0].label}</div>
+                    <div className="filter-field filter-field-single">{options[0].label}</div>
                   )}
                   {!!option && renderGroupContent(option)}
                 </div>
@@ -503,6 +517,7 @@ function Filter<T extends string = string>(props: Props<T>) {
         <Button type="primary" onClick={handleSubmit}>
           查询
         </Button>
+        {extra}
       </div>
       {tags.length > 0 && (
         <div className="filter-tags">

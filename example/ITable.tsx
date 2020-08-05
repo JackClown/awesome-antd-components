@@ -2,11 +2,13 @@ import React from 'react';
 
 import { ITable } from '../lib';
 import { Operators } from '../lib/Filter';
-import { Button } from 'antd';
+import { delay } from 'lodash';
 
 export default function Demo() {
-  const fetch = () => {
-    return Promise.resolve({
+  const fetch = async () => {
+    await new Promise(res => delay(res, 1000));
+
+    return {
       total: 3,
       data: [
         {
@@ -28,11 +30,12 @@ export default function Demo() {
           tag: 3,
         },
       ],
-    });
+    };
   };
 
   return (
     <ITable
+      name="测试"
       fetch={fetch}
       rowKey="id"
       actions={[
@@ -40,6 +43,13 @@ export default function Demo() {
           text: '测试',
           action: () => {},
           useSelected: true,
+        },
+      ]}
+      defaultQueries={[
+        {
+          field: 'name',
+          operator: Operators.EQUAL,
+          value: '张三',
         },
       ]}
       columns={[
@@ -51,11 +61,7 @@ export default function Demo() {
           title: '名称',
           dataIndex: 'name',
           operators: [Operators.EQUAL],
-          type: 'popup',
-          popup: {
-            formatLabel: value => value,
-            component: props => <Button onClick={() => props.onChange(1)}>hello world</Button>,
-          },
+          type: 'input',
         },
         {
           title: '性别',

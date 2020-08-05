@@ -2,7 +2,7 @@
   "compilerOptions": {
     "outDir": "./lib",
     "module": "es6",
-    "target": "es6",
+    "target": "es2019",
     "lib": ["es2020", "dom"],
     "sourceMap": true,
     "baseUrl": ".",

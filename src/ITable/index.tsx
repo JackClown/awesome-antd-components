@@ -2,7 +2,8 @@ import React, { useState, useMemo, DependencyList, useImperativeHandle, Ref } fr
 import { TableProps } from 'antd/lib/table';
 
 import { useAsyncEffect, useDeepCompareMemoize } from '../hooks';
-import Filter, { TagValue, FormType, Option, Operators } from '../Filter';
+import { TagValue, FormType, Option, Operators } from '../Filter';
+import Filter, { Plan, DEFUALT_FILTER_NAME } from './MultiFilter';
 import Table, { ColumnType } from '../Table';
 import Layout from '../Layout';
 import Section from '../Section';
@@ -19,7 +20,15 @@ export type IColumType<T> = Omit<ColumnType<T>, 'title'> &
 export interface ITableRef {
   fetch: (current?: number) => void;
   setQueries: (queries: TagValue[]) => void;
-  getQueries: () => TagValue[];
+  getQueries: () => TagValue[] | null;
+}
+
+export interface Storage {
+  filter: {
+    getAllItems: (key: string) => Plan[] | Promise<Plan[]>;
+    setItem: (key: string, filter: Plan) => void;
+    removeItem: (key: string, filter: Plan) => void;
+  };
 }
 
 export interface Props<T> extends Omit<TableProps<T>, 'columns' | 'rowKey' | 'title'> {
@@ -48,6 +57,60 @@ export interface Props<T> extends Omit<TableProps<T>, 'columns' | 'rowKey' | 'ti
   actionRef?: Ref<ITableRef>;
   summaryTitle?: string;
   shouldFetch?: boolean;
+  storage?: Storage;
+  name?: string;
+}
+
+let defaultStorage: Storage = {
+  filter: {
+    getAllItems(key: string): Plan[] {
+      const data = localStorage.getItem(`filters-${key}`);
+
+      if (data) {
+        return JSON.parse(data);
+      }
+
+      return [];
+    },
+    setItem(key: string, filter: Plan) {
+      const data = localStorage.getItem(`filters-${key}`);
+      let filters: Plan[] = [];
+
+      if (data) {
+        filters = JSON.parse(data);
+      }
+
+      const index = filters.findIndex(item => item.name === filter.name);
+
+      if (index >= 0) {
+        filters[index] = filter;
+      } else {
+        filters.push(filter);
+      }
+
+      localStorage.setItem(`filters-${key}`, JSON.stringify(filters));
+    },
+    removeItem(key: string, filter: Plan) {
+      const data = localStorage.getItem(`filters-${key}`);
+      let filters: Plan[] = [];
+
+      if (data) {
+        filters = JSON.parse(data);
+      }
+
+      const index = filters.findIndex(item => item.name === filter.name);
+
+      if (index >= 0) {
+        filters.splice(index, 1);
+      }
+
+      localStorage.setItem(`filters-${key}`, JSON.stringify(filters));
+    },
+  },
+};
+
+export function setStorage(storage: Storage) {
+  defaultStorage = storage;
 }
 
 export default function ITable<T extends object>(props: Props<T>) {
@@ -61,35 +124,24 @@ export default function ITable<T extends object>(props: Props<T>) {
     pagination: paginationProps,
     rowSelection,
     shouldFetch = true,
+    name,
+    storage = defaultStorage,
     ...restProps
   } = props;
-  const [queries, setQueries] = useState<TagValue[]>(defaultQueries);
+
+  const [queries, setQueries] = useState<TagValue[] | null>(null);
+
+  const [filters, setFilters] = useState<Plan[]>([
+    {
+      name: DEFUALT_FILTER_NAME,
+      value: defaultQueries,
+    },
+  ]);
 
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: (paginationProps && paginationProps.pageSize) || 50,
   });
-
-  useImperativeHandle(
-    actionRef,
-    () => ({
-      fetch: (current?: number) => {
-        setPagination(prev => {
-          if (current) {
-            return {
-              ...prev,
-              current,
-            };
-          }
-
-          return { ...prev };
-        });
-      },
-      setQueries,
-      getQueries: () => queries,
-    }),
-    [queries],
-  );
 
   const [state, setState] = useState<{
     loading: boolean;
@@ -180,9 +232,53 @@ export default function ITable<T extends object>(props: Props<T>) {
     return [options, cols];
   }, [memoizedColumns]);
 
+  useImperativeHandle(
+    actionRef,
+    () => ({
+      fetch: (current?: number) => {
+        setPagination(prev => {
+          if (current) {
+            return {
+              ...prev,
+              current,
+            };
+          }
+
+          return { ...prev };
+        });
+      },
+      setQueries,
+      getQueries: () => queries,
+    }),
+    [queries],
+  );
+
+  useAsyncEffect(async flag => {
+    try {
+      let nextFilters = filters;
+
+      if (name) {
+        const data = await storage.filter.getAllItems(name);
+
+        if (flag.cancelled) {
+          return;
+        }
+
+        if (data.length > 0) {
+          nextFilters = [...filters, ...data];
+          setFilters(nextFilters);
+        }
+      }
+
+      setQueries(nextFilters[0].value);
+    } catch (err) {
+      // noop
+    }
+  }, []);
+
   useAsyncEffect(
     async flag => {
-      if (cols.length <= 0 || !shouldFetch) {
+      if (cols.length <= 0 || queries === null || !shouldFetch) {
         return;
       }
 
@@ -235,6 +331,22 @@ export default function ITable<T extends object>(props: Props<T>) {
     };
   }, [total, pagination, paginationProps]);
 
+  const handleSaveFilter = (filter: Plan, filters: Plan[]) => {
+    if (name) {
+      storage.filter.setItem(name, filter);
+    }
+
+    setFilters(filters);
+  };
+
+  const handleDeleteFilter = (filter: Plan, filters: Plan[]) => {
+    if (name) {
+      storage.filter.removeItem(name, filter);
+    }
+
+    setFilters(filters);
+  };
+
   return (
     <Layout>
       {actions && actions.length > 0 && (
@@ -253,8 +365,16 @@ export default function ITable<T extends object>(props: Props<T>) {
         />
       )}
       {options.length > 0 && (
-        <Section title="默认">
-          <Filter value={queries} options={options} onSubmit={setQueries} />
+        <Section type="filter">
+          <Filter
+            value={queries || []}
+            options={options}
+            filters={filters}
+            onSubmit={setQueries}
+            onSave={handleSaveFilter}
+            onDelete={handleDeleteFilter}
+            multiple={!!name}
+          />
         </Section>
       )}
       {cols.length > 0 && (
