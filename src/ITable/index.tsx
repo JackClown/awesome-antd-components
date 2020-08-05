@@ -21,6 +21,7 @@ export interface ITableRef {
   fetch: (current?: number) => void;
   setQueries: (queries: TagValue[]) => void;
   getQueries: () => TagValue[] | null;
+  gteSelected: () => any[];
 }
 
 export interface Storage {
@@ -249,6 +250,7 @@ export default function ITable<T extends object>(props: Props<T>) {
       },
       setQueries,
       getQueries: () => queries,
+      gteSelected: () => selectedRows,
     }),
     [queries],
   );
