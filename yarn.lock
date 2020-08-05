@@ -896,7 +896,7 @@ ansi-wrap@0.1.0, ansi-wrap@^0.1.0:
   resolved "https://registry.npm.taobao.org/ansi-wrap/download/ansi-wrap-0.1.0.tgz#a82250ddb0015e9a27ca82e82ea603bbfa45efaf"
   integrity sha1-qCJQ3bABXponyoLoLqYDu/pF768=
 
-antd@^4.4.1:
+antd@^4.3.4:
   version "4.5.2"
   resolved "https://registry.npm.taobao.org/antd/download/antd-4.5.2.tgz#0551b2999d5c9827d996b860e827974d50d87ed9"
   integrity sha1-BVGymZ1cmCfZlrhg6CeXTVDYftk=

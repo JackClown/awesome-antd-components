@@ -1,6 +1,6 @@
 {
   "name": "awesome-antd-components",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "main": "lib/index.js",
   "author": "Shengjie Lu",
   "license": "MIT",
@@ -64,9 +64,9 @@
   },
   "dependencies": {
     "@ant-design/icons": "^4.2.1",
-    "antd": "^4.4.1",
+    "antd": "^4.3.4",
     "classnames": "^2.2.6",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.15",
     "moment": "^2.27.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
