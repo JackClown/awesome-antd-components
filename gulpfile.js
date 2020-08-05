@@ -7,38 +7,44 @@ const through = require('through2');
 const path = require('path');
 const concat = require('gulp-concat');
 const spawn = require('cross-spawn');
+const babel = require('gulp-babel');
 
 function compileTS() {
-  const tsResult = src(['src/**/*.tsx', 'src/*.ts'])
-    .pipe(replace(/import\s+([\'\"])[\.\/\\a-zA-Z0-9_]+\.less\1;/, ''))
-    .pipe(ts.createProject('tsconfig.json')());
+  const tsResult = src(['src/**/*.tsx', 'src/*.ts']).pipe(ts.createProject('tsconfig.json')());
 
-  return merge([tsResult.dts.pipe(dest('lib')), tsResult.js.pipe(dest('lib'))]);
+  return merge([
+    tsResult.dts.pipe(dest('lib')),
+    tsResult.js
+      .pipe(
+        babel({
+          plugins: [
+            [
+              'babel-plugin-import',
+              {
+                libraryName: 'antd',
+                libraryDirectory: 'lib',
+                style: true,
+              },
+              'antd',
+            ],
+            [
+              'babel-plugin-import',
+              {
+                libraryName: 'lodash',
+                libraryDirectory: '',
+                camel2DashComponentName: false,
+              },
+              'lodash',
+            ],
+          ],
+        }),
+      )
+      .pipe(dest('lib')),
+  ]);
 }
 
 function moveLess() {
   return src('src/**/*.less')
-    .pipe(dest('lib'))
-    .pipe(
-      less({
-        javascriptEnabled: true,
-      }),
-    )
-    .pipe(dest('lib'));
-}
-
-function compileLess() {
-  return src('src/**/*.less', { buffer: false })
-    .pipe(
-      through.obj((file, _, cb) => {
-        const content = `@import './${path.relative(path.resolve(__dirname, 'src'), file.path)}';`;
-
-        file.contents = Buffer.from(content);
-
-        cb(null, file);
-      }),
-    )
-    .pipe(concat('index.less'))
     .pipe(dest('lib'))
     .pipe(
       less({
@@ -54,7 +60,7 @@ function watchFiles() {
   watch(['src/**/*.less'], processLess);
 }
 
-const processLess = series(moveLess, compileLess);
+const processLess = moveLess;
 
 exports.dev = series(parallel(compileTS, processLess), watchFiles);
 
