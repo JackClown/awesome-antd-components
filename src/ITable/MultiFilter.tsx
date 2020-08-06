@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import classNames from 'classnames';
 import { Modal, Form, Button, Input, message } from 'antd';
 
@@ -35,6 +35,10 @@ export default function MultiFilter<T extends string = string>(props: Props<T>) 
   const [form] = Form.useForm();
 
   const valueRef = useRef(value);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   const toggleModal = () => {
     setState(prev => ({

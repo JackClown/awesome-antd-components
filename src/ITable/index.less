@@ -3,9 +3,10 @@
 .filter-plan {
   display: flex;
   flex-direction: row;
-  height: 28px;
+  height: @height-base;
 
   &-item {
+    position: relative;
     width: 111px;
     height: 100%;
     padding: 0 10px;
@@ -13,8 +14,15 @@
     box-shadow: 0 2px 5px -2px #e6e6e6;
     cursor: pointer;
 
-    &-active {
-      border-left: 2px solid @primary-color;
+    &-active::before {
+      position: absolute;
+      top: (@height-base - 15) / 2;
+      left: 0;
+      display: block;
+      width: 2px;
+      height: 15px;
+      background-color: @section-color;
+      content: '';
     }
   }
 }

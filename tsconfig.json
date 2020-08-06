@@ -2,8 +2,8 @@
   "compilerOptions": {
     "outDir": "./lib",
     "module": "es6",
-    "target": "esnext",
-    "lib": ["esnext", "dom"],
+    "target": "es2019",
+    "lib": ["es2019", "dom"],
     "sourceMap": true,
     "baseUrl": ".",
     "jsx": "react",

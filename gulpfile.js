@@ -22,7 +22,7 @@ function compileTS() {
               'babel-plugin-import',
               {
                 libraryName: 'antd',
-                libraryDirectory: 'lib',
+                libraryDirectory: 'es',
                 style: true,
               },
               'antd',
