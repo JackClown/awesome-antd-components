@@ -57,6 +57,10 @@ export default function Popup<T>(props: PopupProps<T>) {
   };
 
   const handleOpen = () => {
+    if (disabled) {
+      return;
+    }
+
     setVisible(true);
   };
 

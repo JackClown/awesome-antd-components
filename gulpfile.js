@@ -13,7 +13,9 @@ function compileTS() {
   const tsResult = src(['src/**/*.tsx', 'src/*.ts']).pipe(ts.createProject('tsconfig.json')());
 
   return merge([
-    tsResult.dts.pipe(dest('lib')),
+    tsResult.dts
+      .pipe(replace(/import\s+([\'\"])[\.\/\\a-zA-Z0-9_]+\.less\1;/, ''))
+      .pipe(dest('lib')),
     tsResult.js
       .pipe(
         babel({
