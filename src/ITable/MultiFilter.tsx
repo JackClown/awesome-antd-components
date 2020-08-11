@@ -6,6 +6,7 @@ import Filter, { TagValue, Props as FilterProps } from '../Filter';
 import './index.less';
 
 export interface Plan {
+  id?: string | number;
   name: string;
   value: TagValue<any>[];
 }

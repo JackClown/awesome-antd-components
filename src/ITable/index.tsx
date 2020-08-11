@@ -27,7 +27,7 @@ export interface ITableRef {
 export interface Storage {
   filter: {
     getAllItems: (key: string) => Plan[] | Promise<Plan[]>;
-    setItem: (key: string, filter: Plan) => void;
+    setItem: (key: string, filter: Plan) => Promise<Plan | void> | Plan | void;
     removeItem: (key: string, filter: Plan) => void;
   };
 }
@@ -90,6 +90,8 @@ let defaultStorage: Storage = {
       }
 
       localStorage.setItem(`filters-${key}`, JSON.stringify(filters));
+
+      return filter;
     },
     removeItem(key: string, filter: Plan) {
       const data = localStorage.getItem(`filters-${key}`);
@@ -256,9 +258,11 @@ export default function ITable<T extends object>(props: Props<T>) {
   );
 
   useAsyncEffect(async flag => {
-    try {
-      let nextFilters = filters;
+    setState(prev => ({ ...prev, loading: true }));
 
+    let nextFilters = filters;
+
+    try {
       if (name) {
         const data = await storage.filter.getAllItems(name);
 
@@ -271,11 +275,11 @@ export default function ITable<T extends object>(props: Props<T>) {
           setFilters(nextFilters);
         }
       }
-
-      setQueries(nextFilters[0].value);
     } catch (err) {
       // noop
     }
+
+    setQueries(nextFilters[0].value);
   }, []);
 
   useAsyncEffect(
@@ -333,12 +337,28 @@ export default function ITable<T extends object>(props: Props<T>) {
     };
   }, [total, pagination, paginationProps]);
 
-  const handleSaveFilter = (filter: Plan, filters: Plan[]) => {
-    if (name) {
-      storage.filter.setItem(name, filter);
-    }
+  const handleSaveFilter = async (filter: Plan, filters: Plan[]) => {
+    try {
+      setFilters(filters);
 
-    setFilters(filters);
+      if (name) {
+        const result = await storage.filter.setItem(name, filter);
+
+        if (result) {
+          const index = filters.findIndex(item => item.name === filter.name);
+
+          if (index >= 0) {
+            const nextFilters = [...filters];
+
+            nextFilters[index] = result;
+
+            setFilters(nextFilters);
+          }
+        }
+      }
+    } catch (err) {
+      // noop
+    }
   };
 
   const handleDeleteFilter = (filter: Plan, filters: Plan[]) => {
