@@ -1,32 +1,30 @@
-import React, { CSSProperties, ReactElement } from 'react';
+import React, { CSSProperties } from 'react';
 import { Space, Dropdown, Menu, Button } from 'antd';
 import classNames from 'classnames';
 
 import Down from '../Filter/Down';
 import './index.less';
 
-interface Props<T, K = (payload: T) => void> {
+interface Props<T extends Function> {
   actions: {
     text: string;
-    action?: K;
+    action?: T;
     disabled?: boolean;
     dropDown?: {
       text: string;
-      onClick: K;
+      onClick: T;
       disabled?: boolean;
     }[];
   }[];
-  payload: T;
   className?: string;
   style?: CSSProperties;
 }
 
-interface ActionsType {
-  <T>(props: Props<T, (payload: T) => void>): ReactElement;
-  (props: Omit<Props<void, () => void>, 'payload'>): ReactElement;
-}
+function Actions<T>(props: Props<(payload: T) => void> & { payload: T }): JSX.Element;
 
-function Actions<T>(props: Props<T>) {
+function Actions(props: Props<() => void>): JSX.Element;
+
+function Actions<T>(props: Props<(payload?: T) => void> & { payload?: T }) {
   const { actions, payload, className, style } = props;
 
   return (
@@ -69,4 +67,4 @@ function Actions<T>(props: Props<T>) {
   );
 }
 
-export default Actions as ActionsType;
+export default Actions;

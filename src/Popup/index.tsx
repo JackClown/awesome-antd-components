@@ -6,7 +6,6 @@ import React, {
   cloneElement,
   ReactNode,
   SyntheticEvent,
-  useEffect,
   useRef,
 } from 'react';
 import { Modal, Input } from 'antd';
@@ -16,7 +15,7 @@ import { SearchOutlined, CloseCircleFilled } from '@ant-design/icons';
 import './index.less';
 
 export interface PopupProps<T> extends ModalProps {
-  formatLabel: (value: T) => string;
+  formatLabel?: (value: T) => string;
   children?: ReactElement<any>;
   value?: T;
   onChange?: (value?: T) => void;
@@ -27,6 +26,7 @@ export interface PopupProps<T> extends ModalProps {
   }>;
   disabled?: boolean;
   autoFocus?: boolean;
+  showLabel?: boolean;
 }
 
 export default function Popup<T>(props: PopupProps<T>) {
@@ -39,6 +39,7 @@ export default function Popup<T>(props: PopupProps<T>) {
     disabled = false,
     allowClear = false,
     autoFocus,
+    showLabel = true,
     ...restProps
   } = props;
 
@@ -47,10 +48,6 @@ export default function Popup<T>(props: PopupProps<T>) {
   const [visible, setVisible] = useState(false);
 
   const inputRef = useRef<Input>(null);
-
-  useEffect(() => {
-    setValue(valueProp);
-  }, [valueProp]);
 
   const handleCancel = () => {
     setVisible(false);
@@ -61,6 +58,7 @@ export default function Popup<T>(props: PopupProps<T>) {
       return;
     }
 
+    setValue(valueProp);
     setVisible(true);
   };
 
@@ -84,12 +82,12 @@ export default function Popup<T>(props: PopupProps<T>) {
     }
   };
 
-  const label = valueProp ? formatLabel(valueProp) : '';
+  const label = valueProp ? formatLabel?.(valueProp) : undefined;
 
   let trigger: ReactNode;
 
   if (children) {
-    trigger = cloneElement(children, undefined, label);
+    trigger = showLabel ? cloneElement(children, undefined, label) : children;
   } else {
     trigger = (
       <Input

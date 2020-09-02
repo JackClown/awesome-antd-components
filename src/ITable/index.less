@@ -1,5 +1,39 @@
 @import '../theme.less';
 
+.itable-toolbar {
+  &.section .section-body {
+    display: flex;
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  &-search {
+    flex: 1;
+    overflow: auto;
+  }
+
+  &-option {
+    flex: 0;
+    padding: 10px;
+    line-height: 1;
+  }
+
+  &-option &-icon {
+    font-size: 1.2em;
+  }
+
+  &-icon {
+    color: #999;
+    cursor: pointer;
+    transition: 0.2s color;
+
+    &:hover,
+    &:active {
+      color: @primary-color;
+    }
+  }
+}
+
 .filter-plan {
   display: flex;
   flex-direction: row;

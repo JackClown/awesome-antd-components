@@ -366,10 +366,7 @@ function Filter<T extends string = string>(props: Props<T>) {
     switch (option.type) {
       case 'input':
         formItem = (
-          <Input
-            value={value?.toString()}
-            onInput={e => handleChangeValue(field, e.currentTarget.value)}
-          />
+          <Input value={value} onInput={e => handleChangeValue(field, e.currentTarget.value)} />
         );
         break;
       case 'select':
@@ -470,7 +467,7 @@ function Filter<T extends string = string>(props: Props<T>) {
         break;
       case 'popup':
         if (popup) {
-          val = popup.formatLabel(tag.value);
+          val = popup.formatLabel ? popup.formatLabel(tag.value) : tag.value;
         }
         break;
       default:

@@ -8,6 +8,7 @@ import Table, { ColumnType } from '../Table';
 import Layout from '../Layout';
 import Section from '../Section';
 import Actions from '../Actions';
+import CustomizeColumn, { ColumnPlan } from './CustomizeColumn';
 
 export type IColumType<T> = Omit<ColumnType<T>, 'title'> &
   Omit<Option<string>, 'field' | 'label' | 'type' | 'operators'> & {
@@ -29,6 +30,10 @@ export interface Storage {
     getAllItems: (key: string) => Plan[] | Promise<Plan[]>;
     setItem: (key: string, filter: Plan) => Promise<Plan | void> | Plan | void;
     removeItem: (key: string, filter: Plan) => void;
+  };
+  column: {
+    set: (key: string, data: ColumnPlan) => void | Promise<void>;
+    get: (key: string) => ColumnPlan | Promise<ColumnPlan>;
   };
 }
 
@@ -64,7 +69,7 @@ export interface Props<T> extends Omit<TableProps<T>, 'columns' | 'rowKey' | 'ti
 
 let defaultStorage: Storage = {
   filter: {
-    getAllItems(key: string): Plan[] {
+    getAllItems(key) {
       const data = localStorage.getItem(`filters-${key}`);
 
       if (data) {
@@ -73,7 +78,7 @@ let defaultStorage: Storage = {
 
       return [];
     },
-    setItem(key: string, filter: Plan) {
+    setItem(key, filter) {
       const data = localStorage.getItem(`filters-${key}`);
       let filters: Plan[] = [];
 
@@ -93,7 +98,7 @@ let defaultStorage: Storage = {
 
       return filter;
     },
-    removeItem(key: string, filter: Plan) {
+    removeItem(key, filter) {
       const data = localStorage.getItem(`filters-${key}`);
       let filters: Plan[] = [];
 
@@ -110,10 +115,36 @@ let defaultStorage: Storage = {
       localStorage.setItem(`filters-${key}`, JSON.stringify(filters));
     },
   },
+  column: {
+    get(key) {
+      const data = localStorage.getItem(`columns-${key}`);
+
+      if (data) {
+        return JSON.parse(data);
+      }
+
+      return [];
+    },
+    set(key, data) {
+      localStorage.setItem(`columns-${key}`, JSON.stringify(data));
+    },
+  },
 };
 
 export function setStorage(storage: Storage) {
-  defaultStorage = storage;
+  defaultStorage = { ...defaultStorage, ...storage };
+}
+
+export function keyExtractor(item: ColumnType<any>) {
+  if (item.dataIndex) {
+    if (Array.isArray(item.dataIndex)) {
+      return item.dataIndex.join('|');
+    }
+
+    return item.dataIndex;
+  }
+
+  return item.key || '';
 }
 
 export default function ITable<T extends object>(props: Props<T>) {
@@ -132,14 +163,18 @@ export default function ITable<T extends object>(props: Props<T>) {
     ...restProps
   } = props;
 
-  const [queries, setQueries] = useState<TagValue[] | null>(null);
+  const defaultFilter = {
+    name: DEFUALT_FILTER_NAME,
+    value: defaultQueries,
+  };
 
-  const [filters, setFilters] = useState<Plan[]>([
-    {
-      name: DEFUALT_FILTER_NAME,
-      value: defaultQueries,
-    },
-  ]);
+  const [queries, setQueries] = useState<TagValue[]>(defaultQueries);
+
+  const [filters, setFilters] = useState<Plan[] | undefined>(undefined);
+
+  const [column, setColumn] = useState<ColumnPlan | undefined>(undefined);
+
+  const ready = column !== undefined && filters !== undefined && shouldFetch;
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -163,15 +198,7 @@ export default function ITable<T extends object>(props: Props<T>) {
 
   if (rowSelection !== undefined || actions?.find(item => item.useSelected) !== undefined) {
     iRowSelection = {
-      onChange: selectedKeys => {
-        const rows: T[] = [];
-
-        state.data.forEach(item => {
-          if (selectedKeys.includes(item[props.rowKey])) {
-            rows.push(item);
-          }
-        });
-
+      onChange: (_, rows) => {
         setSelectedRows(rows);
       },
       ...rowSelection,
@@ -180,9 +207,9 @@ export default function ITable<T extends object>(props: Props<T>) {
 
   const memoizedColumns = useDeepCompareMemoize(columns);
 
-  const [options, cols] = useMemo(() => {
+  const [options, allCols] = useMemo(() => {
     const options: Option<string>[] = [];
-    const cols: ColumnType<T>[] = [];
+    const cols: IColumType<T>[] = [];
 
     columns.forEach(col => {
       if (col.type && typeof col.dataIndex === 'string') {
@@ -199,13 +226,13 @@ export default function ITable<T extends object>(props: Props<T>) {
         });
       }
 
-      if (col.hideInTable) {
+      if (col.hideInTable || (col.dataIndex === undefined && col.key === undefined)) {
         return;
       }
 
       const enumsMap = new Map();
 
-      const column: ColumnType<T> = { ...col };
+      const column = { ...col };
 
       if (col.enums !== undefined) {
         col.enums.forEach(item => {
@@ -232,7 +259,7 @@ export default function ITable<T extends object>(props: Props<T>) {
       cols.push(column);
     });
 
-    return [options, cols];
+    return [options, new Map(cols.map(col => [keyExtractor(col), col]))];
   }, [memoizedColumns]);
 
   useImperativeHandle(
@@ -254,37 +281,89 @@ export default function ITable<T extends object>(props: Props<T>) {
       getQueries: () => queries,
       gteSelected: () => selectedRows,
     }),
-    [queries],
+    [queries, selectedRows],
   );
 
   useAsyncEffect(async flag => {
     setState(prev => ({ ...prev, loading: true }));
 
-    let nextFilters = filters;
+    let nextFilters: Plan[] = [defaultFilter];
+    let columnPlan: ColumnPlan = [];
 
     try {
       if (name) {
-        const data = await storage.filter.getAllItems(name);
+        const [filter = [], column = []] = await Promise.all([
+          storage.filter.getAllItems(name),
+          storage.column.get(name),
+        ]);
 
         if (flag.cancelled) {
           return;
         }
 
-        if (data.length > 0) {
-          nextFilters = [...filters, ...data];
-          setFilters(nextFilters);
+        if (filter.length > 0) {
+          nextFilters = [...nextFilters, ...filter];
         }
+
+        columnPlan = column;
       }
     } catch (err) {
       // noop
     }
 
     setQueries(nextFilters[0].value);
+
+    const data: ColumnPlan = [];
+
+    columnPlan.forEach(item => {
+      const col = allCols.get(item.key);
+
+      if (col) {
+        data.push({
+          title: col.title,
+          ...item,
+        });
+      }
+    });
+
+    [...allCols].forEach(([key, col], index) => {
+      const item = data.find(item => item.key === key);
+
+      if (item === undefined) {
+        data.splice(index, 0, {
+          key,
+          title: col.title,
+          visible: true,
+          width: col.width,
+        });
+      }
+    });
+
+    setFilters(nextFilters);
+    setColumn(data);
   }, []);
+
+  const cols = useMemo(() => {
+    if (column === undefined) {
+      return [];
+    }
+
+    const data: IColumType<T>[] = [];
+
+    column.forEach(item => {
+      const col = allCols.get(item.key);
+
+      if (item.visible && col) {
+        data.push(col);
+      }
+    });
+
+    return data;
+  }, [allCols, column]);
 
   useAsyncEffect(
     async flag => {
-      if (cols.length <= 0 || queries === null || !shouldFetch) {
+      if (!ready) {
         return;
       }
 
@@ -294,7 +373,7 @@ export default function ITable<T extends object>(props: Props<T>) {
         const { total, data, summary } = await fetch({
           page: pagination.current,
           pageSize: pagination.pageSize,
-          queries,
+          queries: queries || [],
         });
 
         if (flag.cancelled) {
@@ -312,7 +391,7 @@ export default function ITable<T extends object>(props: Props<T>) {
         setState(prev => ({ ...prev, loading: false }));
       }
     },
-    [queries, pagination, cols, shouldFetch, ...extraDeps],
+    [ready, queries, pagination, ...extraDeps],
   );
 
   const { total, data, summary, loading } = state;
@@ -369,6 +448,20 @@ export default function ITable<T extends object>(props: Props<T>) {
     setFilters(filters);
   };
 
+  const hanldeSaveColumns = async (column?: ColumnPlan) => {
+    if (!column) {
+      return;
+    }
+
+    setColumn(column);
+
+    if (name) {
+      storage.column.set(name, column);
+    }
+  };
+
+  const disabled = selectedRows.length <= 0;
+
   return (
     <Layout>
       {actions && actions.length > 0 && (
@@ -376,40 +469,40 @@ export default function ITable<T extends object>(props: Props<T>) {
           payload={selectedRows}
           actions={actions.map(item => {
             if (item.useSelected) {
-              return {
-                ...item,
-                disabled: selectedRows.length <= 0,
-              };
+              return { ...item, disabled };
             }
 
             return item;
           })}
         />
       )}
-      {options.length > 0 && (
-        <Section type="filter">
-          <Filter
-            value={queries || []}
-            options={options}
-            filters={filters}
-            onSubmit={setQueries}
-            onSave={handleSaveFilter}
-            onDelete={handleDeleteFilter}
-            multiple={!!name}
-          />
-        </Section>
-      )}
-      {cols.length > 0 && (
-        <Table
-          dataSource={data}
-          pagination={page}
-          columns={cols}
-          {...restProps}
-          loading={loading}
-          rowSelection={iRowSelection}
-          summaryRecord={summary as T}
-        />
-      )}
+      <Section className="itable-toolbar">
+        <div className="itable-toolbar-search">
+          {options.length > 0 && (
+            <Filter
+              value={queries}
+              options={options}
+              filters={filters || [defaultFilter]}
+              onSubmit={setQueries}
+              onSave={handleSaveFilter}
+              onDelete={handleDeleteFilter}
+              multiple={!!name}
+            />
+          )}
+        </div>
+        <div className="itable-toolbar-option">
+          {!!name && <CustomizeColumn value={column} onChange={hanldeSaveColumns} />}
+        </div>
+      </Section>
+      <Table
+        dataSource={data}
+        pagination={page}
+        columns={cols || []}
+        {...restProps}
+        loading={loading}
+        rowSelection={iRowSelection}
+        summaryRecord={summary as T}
+      />
     </Layout>
   );
 }
