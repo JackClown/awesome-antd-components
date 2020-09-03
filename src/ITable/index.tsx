@@ -160,24 +160,44 @@ export function keyExtractor(item: ColumnType<any>) {
   return item.key || '';
 }
 
-function useDelaySave<T>(payload: T, cb: (payload: T) => void) {
-  const data = useRef(payload);
-  const callback = useRef(cb);
-  const timing = useRef<any>(null);
+function useBatchUpdate(cb: (data: ColumnPlan) => void, origin: ColumnPlan = []) {
+  const queue = useRef<ColumnType<any>[]>([]);
 
-  data.current = payload;
-  callback.current = cb;
+  const data = useRef(origin);
 
-  return useCallback((duration?: number) => {
-    if (timing.current) {
-      clearTimeout(timing.current);
-      timing.current = null;
-    }
+  data.current = origin;
 
-    timing.current = setTimeout(() => {
-      callback.current(data.current);
-    }, duration);
-  }, []);
+  const update = useCallback(
+    debounce(() => {
+      const map = new Map(data.current.map(item => [item.key, item]));
+
+      queue.current.forEach(col => {
+        const key = keyExtractor(col);
+
+        const item = map.get(key);
+
+        if (item === undefined) {
+          return;
+        }
+
+        map.set(key, {
+          ...item,
+          width: col.width,
+        });
+      });
+
+      queue.current = [];
+
+      cb([...map.values()]);
+    }, 3000),
+    [],
+  );
+
+  return (column: ColumnType<any>) => {
+    queue.current.push(column);
+
+    update();
+  };
 }
 
 export default function ITable<T extends object>(props: Props<T>) {
@@ -530,14 +550,6 @@ export default function ITable<T extends object>(props: Props<T>) {
     setFilters(filters);
   };
 
-  const saveColumns = useDelaySave(column, data => {
-    if (!name || !data) {
-      return;
-    }
-
-    storage.column.set(name, data);
-  });
-
   const hanldeSaveColumns = (column?: ColumnPlan) => {
     if (column === undefined) {
       return;
@@ -545,30 +557,12 @@ export default function ITable<T extends object>(props: Props<T>) {
 
     setColumn(column);
 
-    saveColumns();
+    if (name) {
+      storage.column.set(name, column);
+    }
   };
 
-  const handleChangeColumnWidth = useCallback(
-    debounce((columns: ColumnType<T>[]) => {
-      if (column === undefined) {
-        return;
-      }
-
-      const map: Map<string | number, string | number | undefined> = new Map(
-        columns.map(col => [keyExtractor(col), col.width]),
-      );
-
-      setColumn(
-        column.map(item => ({
-          ...item,
-          width: map.get(item.key),
-        })),
-      );
-
-      saveColumns(2000);
-    }, 1000),
-    [column],
-  );
+  const update = useBatchUpdate(hanldeSaveColumns, column);
 
   const disabled = selectedRows.length <= 0;
 
@@ -612,7 +606,7 @@ export default function ITable<T extends object>(props: Props<T>) {
         loading={loading}
         rowSelection={iRowSelection}
         summaryRecord={summary as T}
-        onColumnsChange={handleChangeColumnWidth}
+        onColumnChange={update}
       />
     </Layout>
   );

@@ -23,7 +23,7 @@ export interface Props<T> extends Omit<TableProps<T>, 'columns' | 'pagination'> 
   loading?: boolean;
   summaryRecord?: T;
   summaryTitle?: string;
-  onColumnsChange?: (columns: ColumnType<T>[]) => void;
+  onColumnChange?: (col: ColumnType<T>) => void;
 }
 
 const Th = React.memo(function Th(props: {
@@ -89,7 +89,7 @@ function Table<T extends object = any>(props: Props<T>) {
     rowSelection,
     columns,
     rowKey,
-    onColumnsChange,
+    onColumnChange,
     ...restProps
   } = props;
 
@@ -107,16 +107,12 @@ function Table<T extends object = any>(props: Props<T>) {
       let handleChange: (width: number) => void;
       let idx = index;
 
-      if (onColumnsChange) {
+      if (onColumnChange) {
         handleChange = debounce((width: number) => {
-          const nextCols = [...columns];
-
-          nextCols[index] = {
-            ...nextCols[index],
+          onColumnChange({
+            ...col,
             width,
-          };
-
-          onColumnsChange(nextCols);
+          });
         }, 500);
       }
 
@@ -145,7 +141,7 @@ function Table<T extends object = any>(props: Props<T>) {
     });
 
     return cols;
-  }, [columns, hasRowSelection, onColumnsChange]);
+  }, [columns, hasRowSelection, onColumnChange]);
 
   const [selectedKeys, setSelectedKeys] = useState<(string | number)[]>(
     rowSelection?.selectedRowKeys || [],
