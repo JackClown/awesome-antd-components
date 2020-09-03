@@ -8,11 +8,9 @@ export default function Demo() {
   const fetch = async ({ page, sort }: { page: number; sort: [string | number, string][] }) => {
     await new Promise(res => delay(res, 1000));
 
-    console.log(JSON.stringify(sort));
-
     return {
       total: 3,
-      data: [...new Array(20)].map((_, idx) => ({
+      data: [...new Array(50)].map((_, idx) => ({
         id: `00${idx}`,
         name: idx,
         sex: '男',
@@ -66,6 +64,8 @@ export default function Demo() {
         {
           title: '年龄',
           dataIndex: 'age',
+          dataFormat: 'number',
+          width: 80,
         },
         {
           title: '标签',

@@ -85,6 +85,7 @@ export default function Demo() {
         formItem: {
           children: (
             <Select
+              showSearch
               options={[
                 {
                   label: '企业',
