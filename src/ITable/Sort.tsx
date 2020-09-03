@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { debounce } from 'lodash';
 
 interface Props {
   value?: string;
   title: string;
   onChange: (value?: string) => void;
+  align?: string;
 }
 
 enum SortValue {
@@ -12,11 +14,24 @@ enum SortValue {
 }
 
 export default function Sort(props: Props) {
-  const { value, title, onChange } = props;
+  const { value, title, onChange, align } = props;
+
+  const [val, setVal] = useState(value);
+
+  useEffect(() => {
+    setVal(value);
+  }, [value]);
+
+  const handleChange = useCallback(
+    debounce((value?: string) => {
+      onChange(value);
+    }, 500),
+    [onChange],
+  );
 
   let node;
 
-  if (value === SortValue.DESC) {
+  if (val === SortValue.DESC) {
     node = (
       <svg xmlns="http://www.w3.org/2000/svg" width="8px" height="10px">
         <path
@@ -31,7 +46,7 @@ export default function Sort(props: Props) {
         />
       </svg>
     );
-  } else if (value === SortValue.ASC) {
+  } else if (val === SortValue.ASC) {
     node = (
       <svg xmlns="http://www.w3.org/2000/svg" width="8px" height="10px">
         <path
@@ -59,21 +74,38 @@ export default function Sort(props: Props) {
   }
 
   const handleClick = () => {
-    let nextValue;
+    let nextVal;
 
-    if (value === SortValue.DESC) {
-      nextValue = undefined;
-    } else if (value === SortValue.ASC) {
-      nextValue = SortValue.DESC;
+    if (val === SortValue.DESC) {
+      nextVal = undefined;
+    } else if (val === SortValue.ASC) {
+      nextVal = SortValue.DESC;
     } else {
-      nextValue = SortValue.ASC;
+      nextVal = SortValue.ASC;
     }
 
-    onChange(nextValue);
+    setVal(nextVal);
+    handleChange(nextVal);
   };
 
+  let justify;
+
+  switch (align) {
+    case 'right':
+      justify = 'flex-end';
+      break;
+    case 'center':
+      justify = 'center';
+      break;
+    default:
+  }
+
   return (
-    <div className="itable-sort" onClick={handleClick}>
+    <div
+      className="itable-sort"
+      onClick={handleClick}
+      style={justify ? { justifyContent: justify } : undefined}
+    >
       <div className="itable-sort-title">{title}</div>
       <div>{node}</div>
     </div>

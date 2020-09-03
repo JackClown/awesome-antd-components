@@ -10,7 +10,7 @@ import React, {
 import { Table as AntdTable, Spin } from 'antd';
 import { TableProps, ColumnType as AntdColumnType } from 'antd/lib/table';
 import { ResizeCallbackData, Resizable } from 'react-resizable';
-import { get } from 'lodash';
+import { get, debounce } from 'lodash';
 
 import './Table.less';
 
@@ -23,14 +23,16 @@ export interface Props<T> extends Omit<TableProps<T>, 'columns' | 'pagination'> 
   loading?: boolean;
   summaryRecord?: T;
   summaryTitle?: string;
+  onColumnsChange?: (columns: ColumnType<T>[]) => void;
 }
 
 const Th = React.memo(function Th(props: {
   width?: number;
   index: number;
   tableRef: RefObject<HTMLDivElement>;
+  onChange?: (width: number) => void;
 }) {
-  const { index, width, tableRef, ...restProps } = props;
+  const { index, width, tableRef, onChange, ...restProps } = props;
   const [size, setSize] = useState(width || 0);
 
   if (!width) {
@@ -43,6 +45,10 @@ const Th = React.memo(function Th(props: {
     }
 
     setSize(width);
+
+    if (onChange) {
+      onChange(width);
+    }
 
     const elm = tableRef.current;
 
@@ -83,6 +89,7 @@ function Table<T extends object = any>(props: Props<T>) {
     rowSelection,
     columns,
     rowKey,
+    onColumnsChange,
     ...restProps
   } = props;
 
@@ -96,39 +103,37 @@ function Table<T extends object = any>(props: Props<T>) {
       return [];
     }
 
-    const cols: ColumnType<T>[] = [];
+    const cols = columns.map((col, index) => {
+      let handleChange: (width: number) => void;
+      let idx = index;
 
-    columns.forEach((col, index) => {
-      let width: number;
-      let align: 'left' | 'center' | 'right' | undefined;
+      if (onColumnsChange) {
+        handleChange = debounce((width: number) => {
+          const nextCols = [...columns];
 
-      switch (col.dataFormat) {
-        case 'date':
-          width = 160;
-          break;
-        case 'datetime':
-          width = 200;
-          break;
-        case 'number':
-          width = 120;
-          align = 'right';
-          break;
-        default:
-          width = 120;
+          nextCols[index] = {
+            ...nextCols[index],
+            width,
+          };
+
+          onColumnsChange(nextCols);
+        }, 500);
       }
 
-      cols.push({
+      if (hasRowSelection) {
+        idx += 1;
+      }
+
+      return {
         ellipsis: true,
-        width,
-        align,
-        onHeaderCell: (column: ColumnType<T>) =>
-          ({
-            width: column.width,
-            tableRef: tableWrapper,
-            index: index + (hasRowSelection ? 1 : 0),
-          } as any),
+        onHeaderCell: (column: ColumnType<T>) => ({
+          index: idx,
+          width: column.width,
+          tableRef: tableWrapper,
+          onChange: handleChange,
+        }),
         ...col,
-      });
+      } as ColumnType<T>;
     });
 
     cols.push({
@@ -140,7 +145,7 @@ function Table<T extends object = any>(props: Props<T>) {
     });
 
     return cols;
-  }, [columns, hasRowSelection]);
+  }, [columns, hasRowSelection, onColumnsChange]);
 
   const [selectedKeys, setSelectedKeys] = useState<(string | number)[]>(
     rowSelection?.selectedRowKeys || [],

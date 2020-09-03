@@ -1,5 +1,14 @@
-import React, { useState, useMemo, DependencyList, useImperativeHandle, Ref } from 'react';
+import React, {
+  useState,
+  useMemo,
+  DependencyList,
+  useImperativeHandle,
+  Ref,
+  useCallback,
+  useRef,
+} from 'react';
 import { TableProps } from 'antd/lib/table';
+import { debounce } from 'lodash';
 
 import { useAsyncEffect, useDeepCompareMemoize } from '../hooks';
 import { TagValue, FormType, Option, Operators } from '../Filter';
@@ -18,6 +27,7 @@ export type IColumType<T> = Omit<ColumnType<T>, 'title'> &
     operators?: Operators[];
     hideInTable?: boolean;
     sortable?: boolean;
+    dataFormat?: 'date' | 'datetime' | 'number';
   };
 
 export interface ITableRef {
@@ -134,7 +144,7 @@ let defaultStorage: Storage = {
   },
 };
 
-export function setStorage(storage: Storage) {
+export function setStorage(storage: { filter?: Storage['filter']; column?: Storage['column'] }) {
   defaultStorage = { ...defaultStorage, ...storage };
 }
 
@@ -148,6 +158,26 @@ export function keyExtractor(item: ColumnType<any>) {
   }
 
   return item.key || '';
+}
+
+function useDelaySave<T>(payload: T, cb: (payload: T) => void) {
+  const data = useRef(payload);
+  const callback = useRef(cb);
+  const timing = useRef<any>(null);
+
+  data.current = payload;
+  callback.current = cb;
+
+  return useCallback((duration?: number) => {
+    if (timing.current) {
+      clearTimeout(timing.current);
+      timing.current = null;
+    }
+
+    timing.current = setTimeout(() => {
+      callback.current(data.current);
+    }, duration);
+  }, []);
 }
 
 export default function ITable<T extends object>(props: Props<T>) {
@@ -199,16 +229,20 @@ export default function ITable<T extends object>(props: Props<T>) {
 
   const [selectedRows, setSelectedRows] = useState<T[]>([]);
 
-  let iRowSelection: TableProps<T>['rowSelection'];
+  const iRowSelection = useMemo(() => {
+    let selection: TableProps<T>['rowSelection'];
 
-  if (rowSelection !== undefined || actions?.find(item => item.useSelected) !== undefined) {
-    iRowSelection = {
-      onChange: (_, rows) => {
-        setSelectedRows(rows);
-      },
-      ...rowSelection,
-    };
-  }
+    if (rowSelection !== undefined || actions?.find(item => item.useSelected) !== undefined) {
+      selection = {
+        onChange: (_, rows) => {
+          setSelectedRows(rows);
+        },
+        ...rowSelection,
+      };
+    }
+
+    return selection;
+  }, [rowSelection, actions]);
 
   const memoizedColumns = useDeepCompareMemoize(columns);
 
@@ -235,9 +269,27 @@ export default function ITable<T extends object>(props: Props<T>) {
         return;
       }
 
-      const enumsMap = new Map();
+      let width: number;
+      let align: 'left' | 'center' | 'right' | undefined;
 
-      const column = { ...col };
+      switch (col.dataFormat) {
+        case 'date':
+          width = 160;
+          break;
+        case 'datetime':
+          width = 200;
+          break;
+        case 'number':
+          width = 120;
+          align = 'right';
+          break;
+        default:
+          width = 120;
+      }
+
+      const column = { width, align, ...col };
+
+      const enumsMap = new Map();
 
       if (col.enums !== undefined) {
         col.enums.forEach(item => {
@@ -293,7 +345,7 @@ export default function ITable<T extends object>(props: Props<T>) {
     setState(prev => ({ ...prev, loading: true }));
 
     let nextFilters: Plan[] = [defaultFilter];
-    let columnPlan: ColumnPlan = [];
+    const data: ColumnPlan = [];
 
     try {
       if (name) {
@@ -310,26 +362,21 @@ export default function ITable<T extends object>(props: Props<T>) {
           nextFilters = [...nextFilters, ...filter];
         }
 
-        columnPlan = column;
+        column.forEach(item => {
+          const col = allCols.get(item.key);
+
+          if (col) {
+            data.push({
+              title: col.title,
+              width: col.width,
+              ...item,
+            });
+          }
+        });
       }
     } catch (err) {
       // noop
     }
-
-    setQueries(nextFilters[0].value);
-
-    const data: ColumnPlan = [];
-
-    columnPlan.forEach(item => {
-      const col = allCols.get(item.key);
-
-      if (col) {
-        data.push({
-          title: col.title,
-          ...item,
-        });
-      }
-    });
 
     [...allCols].forEach(([key, col], index) => {
       const item = data.find(item => item.key === key);
@@ -338,8 +385,8 @@ export default function ITable<T extends object>(props: Props<T>) {
         data.splice(index, 0, {
           key,
           title: col.title,
-          visible: true,
           width: col.width,
+          visible: true,
         });
       }
     });
@@ -371,20 +418,24 @@ export default function ITable<T extends object>(props: Props<T>) {
       const col = allCols.get(item.key);
 
       if (item.visible && col) {
-        if (col.sortable === undefined || col.sortable) {
-          data.push({
-            ...col,
-            title: (
-              <Sort
-                value={sort.get(item.key)}
-                title={col.title}
-                onChange={val => handleSort(item.key, val)}
-              />
-            ),
-          });
-        } else {
-          data.push(col);
+        const nextCol: ColumnType<T> = { ...col };
+
+        if (item.width !== undefined) {
+          nextCol.width = item.width;
         }
+
+        if (col.sortable === undefined || col.sortable) {
+          nextCol.title = (
+            <Sort
+              align={col.align}
+              value={sort.get(item.key)}
+              title={col.title}
+              onChange={val => handleSort(item.key, val)}
+            />
+          );
+        }
+
+        data.push(nextCol);
       }
     });
 
@@ -479,17 +530,45 @@ export default function ITable<T extends object>(props: Props<T>) {
     setFilters(filters);
   };
 
-  const hanldeSaveColumns = async (column?: ColumnPlan) => {
-    if (!column) {
+  const saveColumns = useDelaySave(column, data => {
+    if (!name || !data) {
+      return;
+    }
+
+    storage.column.set(name, data);
+  });
+
+  const hanldeSaveColumns = (column?: ColumnPlan) => {
+    if (column === undefined) {
       return;
     }
 
     setColumn(column);
 
-    if (name) {
-      storage.column.set(name, column);
-    }
+    saveColumns();
   };
+
+  const handleChangeColumnWidth = useCallback(
+    debounce((columns: ColumnType<T>[]) => {
+      if (column === undefined) {
+        return;
+      }
+
+      const map: Map<string | number, string | number | undefined> = new Map(
+        columns.map(col => [keyExtractor(col), col.width]),
+      );
+
+      setColumn(
+        column.map(item => ({
+          ...item,
+          width: map.get(item.key),
+        })),
+      );
+
+      saveColumns(2000);
+    }, 1000),
+    [column],
+  );
 
   const disabled = selectedRows.length <= 0;
 
@@ -533,6 +612,7 @@ export default function ITable<T extends object>(props: Props<T>) {
         loading={loading}
         rowSelection={iRowSelection}
         summaryRecord={summary as T}
+        onColumnsChange={handleChangeColumnWidth}
       />
     </Layout>
   );
