@@ -24,7 +24,7 @@ interface Props {
   onChange: (value?: ColumnPlan) => void;
 }
 
-function Customize(props: Props) {
+function Content(props: Props) {
   const { value = [], onChange } = props;
 
   let checked = 0;
@@ -174,13 +174,13 @@ function Customize(props: Props) {
   );
 }
 
-export default function CustomizeColumn(props: Props) {
+export default function SetColumn(props: Props) {
   return (
     <Popup
       title="列设置"
       {...props}
       showLabel={false}
-      component={popProps => <Customize {...popProps} />}
+      component={popProps => <Content {...popProps} />}
     >
       <Tooltip title="列设置">
         <SettingOutlined className="itable-toolbar-icon" />

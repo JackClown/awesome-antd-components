@@ -8,7 +8,8 @@ import Table, { ColumnType } from '../Table';
 import Layout from '../Layout';
 import Section from '../Section';
 import Actions from '../Actions';
-import CustomizeColumn, { ColumnPlan } from './CustomizeColumn';
+import SetColumn, { ColumnPlan } from './SetColumn';
+import Sort from './Sort';
 
 export type IColumType<T> = Omit<ColumnType<T>, 'title'> &
   Omit<Option<string>, 'field' | 'label' | 'type' | 'operators'> & {
@@ -16,6 +17,7 @@ export type IColumType<T> = Omit<ColumnType<T>, 'title'> &
     type?: FormType;
     operators?: Operators[];
     hideInTable?: boolean;
+    sortable?: boolean;
   };
 
 export interface ITableRef {
@@ -43,6 +45,7 @@ export interface Props<T> extends Omit<TableProps<T>, 'columns' | 'rowKey' | 'ti
     page: number;
     pageSize: number;
     queries: TagValue[];
+    sort: [string | number, string][];
   }) => Promise<{
     total: number;
     data: T[];
@@ -138,7 +141,7 @@ export function setStorage(storage: Storage) {
 export function keyExtractor(item: ColumnType<any>) {
   if (item.dataIndex) {
     if (Array.isArray(item.dataIndex)) {
-      return item.dataIndex.join('|');
+      return item.dataIndex.join('.');
     }
 
     return item.dataIndex;
@@ -168,18 +171,20 @@ export default function ITable<T extends object>(props: Props<T>) {
     value: defaultQueries,
   };
 
-  const [queries, setQueries] = useState<TagValue[]>(defaultQueries);
-
   const [filters, setFilters] = useState<Plan[] | undefined>(undefined);
 
   const [column, setColumn] = useState<ColumnPlan | undefined>(undefined);
 
-  const ready = column !== undefined && filters !== undefined && shouldFetch;
+  const [queries, setQueries] = useState<TagValue[]>(defaultQueries);
+
+  const [sort, setSort] = useState<Map<string | number, string>>(new Map());
 
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: (paginationProps && paginationProps.pageSize) || 50,
   });
+
+  const ready = column !== undefined && filters !== undefined && shouldFetch;
 
   const [state, setState] = useState<{
     loading: boolean;
@@ -343,23 +348,48 @@ export default function ITable<T extends object>(props: Props<T>) {
     setColumn(data);
   }, []);
 
+  const handleSort = (key: string | number, value?: string) => {
+    const nextSort = new Map(sort);
+
+    if (value === undefined) {
+      nextSort.delete(key);
+    } else {
+      nextSort.set(key, value);
+    }
+
+    setSort(nextSort);
+  };
+
   const cols = useMemo(() => {
     if (column === undefined) {
       return [];
     }
 
-    const data: IColumType<T>[] = [];
+    const data: ColumnType<T>[] = [];
 
     column.forEach(item => {
       const col = allCols.get(item.key);
 
       if (item.visible && col) {
-        data.push(col);
+        if (col.sortable === undefined || col.sortable) {
+          data.push({
+            ...col,
+            title: (
+              <Sort
+                value={sort.get(item.key)}
+                title={col.title}
+                onChange={val => handleSort(item.key, val)}
+              />
+            ),
+          });
+        } else {
+          data.push(col);
+        }
       }
     });
 
     return data;
-  }, [allCols, column]);
+  }, [allCols, column, sort]);
 
   useAsyncEffect(
     async flag => {
@@ -374,6 +404,7 @@ export default function ITable<T extends object>(props: Props<T>) {
           page: pagination.current,
           pageSize: pagination.pageSize,
           queries: queries || [],
+          sort: [...sort],
         });
 
         if (flag.cancelled) {
@@ -391,7 +422,7 @@ export default function ITable<T extends object>(props: Props<T>) {
         setState(prev => ({ ...prev, loading: false }));
       }
     },
-    [ready, queries, pagination, ...extraDeps],
+    [ready, queries, sort, pagination, ...extraDeps],
   );
 
   const { total, data, summary, loading } = state;
@@ -491,13 +522,13 @@ export default function ITable<T extends object>(props: Props<T>) {
           )}
         </div>
         <div className="itable-toolbar-option">
-          {!!name && <CustomizeColumn value={column} onChange={hanldeSaveColumns} />}
+          {!!name && <SetColumn value={column} onChange={hanldeSaveColumns} />}
         </div>
       </Section>
       <Table
         dataSource={data}
         pagination={page}
-        columns={cols || []}
+        columns={cols}
         {...restProps}
         loading={loading}
         rowSelection={iRowSelection}

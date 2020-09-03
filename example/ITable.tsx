@@ -1,35 +1,24 @@
 import React from 'react';
+import { delay } from 'lodash';
 
 import { ITable } from '../lib';
 import { Operators } from '../lib/Filter';
-import { delay } from 'lodash';
 
 export default function Demo() {
-  const fetch = async () => {
+  const fetch = async ({ page, sort }: { page: number; sort: [string | number, string][] }) => {
     await new Promise(res => delay(res, 1000));
+
+    console.log(JSON.stringify(sort));
 
     return {
       total: 3,
-      data: [
-        {
-          id: '001',
-          name: '张三',
-          sex: '男',
-          tag: 1,
-        },
-        {
-          id: '002',
-          name: '李四',
-          sex: '男',
-          tag: 2,
-        },
-        {
-          id: '003',
-          name: '赵五',
-          sex: '男',
-          tag: 3,
-        },
-      ],
+      data: [...new Array(20)].map((_, idx) => ({
+        id: `00${idx}`,
+        name: idx,
+        sex: '男',
+        tag: 1,
+        age: 18,
+      })),
     };
   };
 
@@ -41,15 +30,10 @@ export default function Demo() {
       actions={[
         {
           text: '测试',
-          action: () => {},
+          action: selectedRows => {
+            console.log(selectedRows);
+          },
           useSelected: true,
-        },
-      ]}
-      defaultQueries={[
-        {
-          field: 'name',
-          operator: Operators.EQUAL,
-          value: '张三',
         },
       ]}
       columns={[
@@ -80,10 +64,15 @@ export default function Demo() {
           ],
         },
         {
+          title: '年龄',
+          dataIndex: 'age',
+        },
+        {
           title: '标签',
           dataIndex: 'tag',
           type: 'multi-select',
           operators: [Operators.BETWEEN],
+          sortable: false,
           enums: [
             {
               label: '金',

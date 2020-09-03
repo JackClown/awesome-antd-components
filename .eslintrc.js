@@ -6,5 +6,6 @@ module.exports = {
     'no-await-in-loop': 0,
     'jsx-a11y/no-noninteractive-tabindex': 0,
     'no-plusplus': 0,
+    'no-nested-ternary': 0,
   },
 };

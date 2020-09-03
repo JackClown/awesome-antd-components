@@ -10,7 +10,6 @@ import 'antd/dist/antd.less';
 import Form from './Form';
 import Itable from './ITable';
 import './index.less';
-import '../lib/index.less';
 
 moment.locale('zh-cn');
 
