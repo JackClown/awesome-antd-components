@@ -6,6 +6,7 @@ interface Props {
   title: string;
   onChange: (value?: string) => void;
   align?: string;
+  index?: number;
 }
 
 enum SortValue {
@@ -14,7 +15,7 @@ enum SortValue {
 }
 
 export default function Sort(props: Props) {
-  const { value, title, onChange, align } = props;
+  const { value, title, onChange, align, index } = props;
 
   const [val, setVal] = useState(value);
 
@@ -107,7 +108,10 @@ export default function Sort(props: Props) {
       style={justify ? { justifyContent: justify } : undefined}
     >
       <div className="itable-sort-title">{title}</div>
-      <div>{node}</div>
+      <div>
+        {node}
+        {index !== undefined && <span className="itable-sort-number">{index}</span>}
+      </div>
     </div>
   );
 }

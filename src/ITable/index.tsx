@@ -445,11 +445,25 @@ export default function ITable<T extends object>(props: Props<T>) {
         }
 
         if (col.sortable === undefined || col.sortable) {
+          let value = '';
+          let index: undefined | number;
+          let i = 0;
+
+          for (const [key, val] of sort) {
+            if (key === item.key) {
+              value = val;
+              index = i + 1;
+            }
+
+            i++;
+          }
+
           nextCol.title = (
             <Sort
               align={col.align}
-              value={sort.get(item.key)}
+              value={value}
               title={col.title}
+              index={index}
               onChange={val => handleSort(item.key, val)}
             />
           );
