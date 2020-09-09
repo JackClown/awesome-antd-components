@@ -78,6 +78,9 @@ export interface Props<T> extends Omit<TableProps<T>, 'columns' | 'rowKey' | 'ti
   shouldFetch?: boolean;
   storage?: Storage;
   name?: string;
+  toolbar?: {
+    setting?: boolean;
+  };
 }
 
 let defaultStorage: Storage = {
@@ -213,6 +216,7 @@ export default function ITable<T extends object>(props: Props<T>) {
     shouldFetch = true,
     name,
     storage = defaultStorage,
+    toolbar,
     ...restProps
   } = props;
 
@@ -556,23 +560,31 @@ export default function ITable<T extends object>(props: Props<T>) {
     }
   };
 
-  const handleDeleteFilter = (filter: Plan, filters: Plan[]) => {
-    if (name) {
-      storage.filter.removeItem(name, filter);
-    }
-
+  const handleDeleteFilter = async (filter: Plan, filters: Plan[]) => {
     setFilters(filters);
+
+    try {
+      if (name) {
+        await storage.filter.removeItem(name, filter);
+      }
+    } catch (err) {
+      // noop
+    }
   };
 
-  const hanldeSaveColumns = (column?: ColumnPlan) => {
+  const hanldeSaveColumns = async (column?: ColumnPlan) => {
     if (column === undefined) {
       return;
     }
 
     setColumn(column);
 
-    if (name) {
-      storage.column.set(name, column);
+    try {
+      if (name) {
+        await storage.column.set(name, column);
+      }
+    } catch (err) {
+      // noop
     }
   };
 
@@ -609,7 +621,7 @@ export default function ITable<T extends object>(props: Props<T>) {
           )}
         </div>
         <div className="itable-toolbar-option">
-          {!!name && <SetColumn value={column} onChange={hanldeSaveColumns} />}
+          {toolbar?.setting !== false && <SetColumn value={column} onChange={hanldeSaveColumns} />}
         </div>
       </Section>
       <Table
