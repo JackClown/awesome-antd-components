@@ -193,7 +193,6 @@ export default function Demo() {
           <Form.Item label="Sex" name="sex" rules={[{ required: true }]}>
             <Popup<number>
               title="Popup"
-              disabled
               formatLabel={val => val.toString()}
               component={props => <Button onClick={() => props.onChange(1)}>hello world</Button>}
             />

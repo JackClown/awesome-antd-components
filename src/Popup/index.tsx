@@ -121,7 +121,7 @@ export default function Popup<T>(props: PopupProps<T>) {
         centered
         onCancel={handleCancel}
         onOk={handleOk}
-        bodyStyle={{ height: '525px', padding: '10px' }}
+        bodyStyle={{ height: '525px', padding: 0 }}
         {...restProps}
       >
         {createElement(component, {
