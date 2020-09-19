@@ -234,7 +234,7 @@ function Table<T extends object = any>(props: Props<T>) {
         />
         {summaryRecord !== undefined && (
           <AntdTable
-            rowSelection={rowSelection}
+            rowSelection={mergedRowSelection}
             rowKey={rowKey}
             showHeader={false}
             pagination={false}
