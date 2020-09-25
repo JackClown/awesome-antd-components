@@ -77,7 +77,10 @@ export interface Props<T> extends Omit<TableProps<T>, 'columns' | 'rowKey' | 'ti
   summaryTitle?: string;
   shouldFetch?: boolean;
   storage?: Storage;
-  name?: string;
+  name?: string | {
+    filter?: string,
+    column?:string
+  };
   toolbar?: {
     setting?: boolean;
   };
@@ -224,6 +227,18 @@ export default function ITable<T extends object>(props: Props<T>) {
     name: DEFUALT_FILTER_NAME,
     value: defaultQueries,
   };
+
+  let filterName: string | undefined;
+  let columnName: string | undefined;
+  if (name !== undefined) {
+    if (typeof name === 'string') {
+      filterName = name;
+      columnName = name;
+    } else {
+      filterName = name.filter;
+      columnName = name.column;
+    }
+  }
 
   const [filters, setFilters] = useState<Plan[] | undefined>(undefined);
 
@@ -372,11 +387,8 @@ export default function ITable<T extends object>(props: Props<T>) {
     const data: ColumnPlan = [];
 
     try {
-      if (name) {
-        const [filter = [], column = []] = await Promise.all([
-          storage.filter.getAllItems(name),
-          storage.column.get(name),
-        ]);
+      if (filterName) {
+        const filter = (await storage.filter.getAllItems(filterName)) || [];
 
         if (flag.cancelled) {
           return;
@@ -384,6 +396,13 @@ export default function ITable<T extends object>(props: Props<T>) {
 
         if (filter.length > 0) {
           nextFilters = [...nextFilters, ...filter];
+        }
+      }
+      if (columnName) {
+        const column = (await storage.column.get(columnName)) || [];
+
+        if (flag.cancelled) {
+          return;
         }
 
         column.forEach(item => {
@@ -540,8 +559,8 @@ export default function ITable<T extends object>(props: Props<T>) {
     try {
       setFilters(filters);
 
-      if (name) {
-        const result = await storage.filter.setItem(name, filter);
+      if (filterName) {
+        const result = await storage.filter.setItem(filterName, filter);
 
         if (result) {
           const index = filters.findIndex(item => item.name === filter.name);
@@ -564,8 +583,8 @@ export default function ITable<T extends object>(props: Props<T>) {
     setFilters(filters);
 
     try {
-      if (name) {
-        await storage.filter.removeItem(name, filter);
+      if (filterName) {
+        await storage.filter.removeItem(filterName, filter);
       }
     } catch (err) {
       // noop
@@ -580,8 +599,8 @@ export default function ITable<T extends object>(props: Props<T>) {
     setColumn(column);
 
     try {
-      if (name) {
-        await storage.column.set(name, column);
+      if (columnName) {
+        await storage.column.set(columnName, column);
       }
     } catch (err) {
       // noop
@@ -616,12 +635,14 @@ export default function ITable<T extends object>(props: Props<T>) {
               onSubmit={setQueries}
               onSave={handleSaveFilter}
               onDelete={handleDeleteFilter}
-              multiple={!!name}
+              multiple={!!filterName}
             />
           )}
         </div>
         <div className="itable-toolbar-option">
-          {toolbar?.setting !== false && <SetColumn value={column} onChange={hanldeSaveColumns} />}
+          {toolbar?.setting !== false && columnName && (
+            <SetColumn value={column} onChange={hanldeSaveColumns} />
+          )}
         </div>
       </Section>
       <Table
