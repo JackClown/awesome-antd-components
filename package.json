@@ -71,7 +71,7 @@
     "babel-plugin-import": "^1.13.0",
     "classnames": "^2.2.6",
     "lodash": "^4.17.15",
-    "moment": "^2.27.0",
+    "moment": "^2.29.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-resizable": "^1.10.1"
